@@ -1,0 +1,55 @@
+# === Qt Creator ===
+*.user
+*.autosave
+*.creator
+*.creator.user
+*.qmlc
+*.qrc
+
+# === Сборка и билды ===
+build/
+Build/
+*-build*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.pro.user
+*.qbs.user
+
+# === Компилятор (Windows) ===
+*.obj
+*.o
+*.exe
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.dll
+x64/
+Debug/
+Release/
+
+# === macOS/Linux ===
+.DS_Store
+*.app
+*.so
+
+# === Секреты и конфиги ===
+# НИКОГДА не коммить пароли!
+config.ini
+.env
+*.key
+*.pem
+credentials.json
+
+# === База данных (опционально) ===
+# Если БД только для тестов — игнорируй
+*.db
+*.sqlite
+*.sqlite3
+
+# === Логи и кэш ===
+*.log
+cache/
+temp/
