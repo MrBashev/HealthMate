@@ -1,0 +1,9 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>CalculatorPage.qml</file>
+        <file>DailyLogPage.qml</file>
+        <file>StatsPage.qml</file>
+    </qresource>
+</RCC>
