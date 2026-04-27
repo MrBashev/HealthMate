@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 Page {
+    background: Rectangle { color: window.bgColor }
     signal backClicked()
 
     ColumnLayout {
@@ -10,34 +11,26 @@ Page {
         anchors.margins: 16
         spacing: 12
 
-        // Кнопка Назад
-        Button {
+        StyledButton {
             text: "← Назад"
             Layout.fillWidth: true
-            background: Rectangle {
-                           color: window.theme[window.appTheme].card
-                           radius: 8
-                       }
-                       contentItem: Text {
-                           text: parent.text
-                           color: window.theme[window.appTheme].text
-                           horizontalAlignment: Text.AlignHCenter
-                       }
+            background: Rectangle { color: window.cardColor; radius: 8 }
+            contentItem: Text {
+                text: parent.text
+                color: window.textColor
+                horizontalAlignment: Text.AlignHCenter
+            }
             onClicked: backClicked()
         }
 
-        // Поля ввода
         TextField {
             id: ageField
             placeholderText: "Возраст (лет)"
             Layout.fillWidth: true
-                        inputMethodHints: Qt.ImhDigitsOnly
-                        color: window.theme[window.appTheme].text
-                        placeholderTextColor: window.theme[window.appTheme].textSecondary
-                        background: Rectangle {
-                            color: window.theme[window.appTheme].card
-                            radius: 4
-                        }
+            inputMethodHints: Qt.ImhDigitsOnly
+            color: window.textColor
+            placeholderTextColor: window.textSecondaryColor
+            background: Rectangle { color: window.cardColor; radius: 4 }
         }
 
         TextField {
@@ -45,53 +38,51 @@ Page {
             placeholderText: "Рост (см)"
             Layout.fillWidth: true
             inputMethodHints: Qt.ImhDigitsOnly
-            background: Rectangle { color: "#2d2d44"; radius: 4 }
+            color: window.textColor
+            placeholderTextColor: window.textSecondaryColor
+            background: Rectangle { color: window.cardColor; radius: 4 }
         }
 
         TextField {
             id: weightField
             placeholderText: "Вес (кг)"
             Layout.fillWidth: true
-                        inputMethodHints: Qt.ImhDigitsOnly
-                        color: window.theme[window.appTheme].text
-                        placeholderTextColor: window.theme[window.appTheme].textSecondary
-                        background: Rectangle {
-                            color: window.theme[window.appTheme].card
-                            radius: 4
-                        }
+            inputMethodHints: Qt.ImhDigitsOnly
+            color: window.textColor
+            placeholderTextColor: window.textSecondaryColor
+            background: Rectangle { color: window.cardColor; radius: 4 }
         }
 
-        // Активность
         ComboBox {
             id: activityBox
             Layout.fillWidth: true
             model: ["Сидячий", "Лёгкая", "Средняя", "Высокая", "Тяжёлая"]
-            currentIndex: 2
-                       background: Rectangle {
-                           color: window.theme[window.appTheme].card
-                           radius: 4
-                       }
-                       contentItem: Text {
-                           text: activityBox.currentText
-                           color: window.theme[window.appTheme].text
-                           verticalAlignment: Text.AlignVCenter
-                       }
+            background: Rectangle { color: window.cardColor; radius: 4 }
+            contentItem: Text {
+                text: activityBox.currentText
+                color: window.textColor
+                verticalAlignment: Text.AlignVCenter
+            }
+            delegate: ItemDelegate {
+                background: Rectangle { color: window.cardColor }
+                contentItem: Text {
+                    text: modelData
+                    color: window.textColor
+                }
+            }
+            popup.background: Rectangle { color: window.surfaceColor }
         }
 
-        // Кнопка Рассчитать
-        Button {
+        StyledButton {
             text: "Рассчитать"
             Layout.fillWidth: true
-            background: Rectangle {
-                           color: window.theme[window.appTheme].accent
-                           radius: 8
-                       }
-                       contentItem: Text {
-                           text: parent.text
-                           color: window.theme[window.appTheme].accentText
-                           font.bold: true
-                           horizontalAlignment: Text.AlignHCenter
-                       }
+            background: Rectangle { color: window.accentColor; radius: 8 }
+            contentItem: Text {
+                text: parent.text
+                color: window.accentTextColor
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+            }
             onClicked: {
                 var age = parseInt(ageField.text) || 25
                 var height = parseFloat(heightField.text) || 170
@@ -102,7 +93,6 @@ Page {
 
                 resultLabel.text = "BMR: " + bmr + " ккал\nTDEE: " + tdee + " ккал"
 
-                // Расчёт БЖУ
                 var macros = HealthCore.calculateMacros(tdee, "maintain")
                 macrosLabel.text = "\nРекомендуемые БЖУ:\n" +
                                    "🥩 Белки: " + macros.protein.toFixed(1) + "г\n" +
@@ -111,18 +101,16 @@ Page {
             }
         }
 
-        // Результат
         Label {
             id: resultLabel
-            color: window.theme[window.appTheme].text
+            color: window.textColor
             wrapMode: Text.WordWrap
             font.pixelSize: 16
         }
 
-        // БЖУ рекомендации
         Label {
             id: macrosLabel
-            color: window.theme[window.appTheme].textSecondary
+            color: window.textSecondaryColor
             wrapMode: Text.WordWrap
             font.pixelSize: 14
         }

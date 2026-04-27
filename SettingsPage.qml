@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 Page {
+    background: Rectangle { color: window.bgColor }
     signal backClicked()
 
     ColumnLayout {
@@ -10,57 +11,50 @@ Page {
         anchors.margins: 16
         spacing: 16
 
-        // Кнопка Назад
-        Button {
+        StyledButton {
             text: "← Назад"
             Layout.fillWidth: true
-            background: Rectangle {  color: window.theme[window.appTheme].card; radius: 8 }
-            contentItem: Text {
-                text: parent.text
-                color: window.theme[window.appTheme].text
-                horizontalAlignment: Text.AlignHCenter
-            }
+            background: Rectangle { color: window.cardColor; radius: 8 }
+            contentItem: Text { text: parent.text; color: window.textColor; horizontalAlignment: Text.AlignHCenter }
             onClicked: backClicked()
         }
 
-        // Заголовок
         Label {
             text: "⚙️ Настройки"
             font.pixelSize: 24
             font.bold: true
-            color: window.theme[window.appTheme].accent
+            color: window.accentColor
         }
 
-        // Переключатель темы
         Label {
             text: "🌓 Тема оформления"
             font.pixelSize: 16
-            color: window.theme[window.appTheme].text
+            color: window.textColor
         }
 
         RowLayout {
             spacing: 8
 
-            Button {
+            StyledButton {
                 text: "🌙 Тёмная"
                 Layout.fillWidth: true
                 background: Rectangle {
-                    color: window.appTheme === "dark" ? window.theme[window.appTheme].accent : window.theme[window.appTheme].card
+                    color: window.appTheme === "dark" ? window.accentColor : window.cardColor
                     radius: 8
                 }
                 contentItem: Text {
                     text: parent.text
-                    color: window.appTheme === "dark" ? "black" : "black"
+                    color: window.appTheme === "dark" ? window.accentTextColor : window.textColor
                     horizontalAlignment: Text.AlignHCenter
                 }
                 onClicked: window.appTheme = "dark"
             }
 
-            Button {
+            StyledButton {
                 text: "☀️ Светлая"
                 Layout.fillWidth: true
                 background: Rectangle {
-                    color: window.appTheme === "light" ? window.theme[window.appTheme].accent : window.theme[window.appTheme].card
+                    color: window.appTheme === "light" ? window.accentColor : window.cardColor
                     radius: 8
                 }
                 contentItem: Text {
@@ -72,12 +66,40 @@ Page {
             }
         }
 
-        // Версия приложения
         Label {
             text: "Версия: 0.6"
-            color: window.theme[window.appTheme].textSecondary
+            color: window.textSecondaryColor
+        }
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: window.borderColor
         }
 
+        StyledButton {
+            text: "ℹ️ О приложении"
+            Layout.fillWidth: true
+            background: Rectangle { color: window.cardColor; radius: 8 }
+            contentItem: Text {
+                text: parent.text
+                color: window.textColor
+                horizontalAlignment: Text.AlignHCenter
+            }
+            onClicked: {
+                // Открываем AboutPage
+                aboutPageLoader.active = true
+                aboutPageLoader.item.open()
+            }
+        }
+
+        // Загрузчик для AboutPage
+        Loader {
+            id: aboutPageLoader
+            active: false
+            sourceComponent: AboutPagePopup {
+                onClosed: aboutPageLoader.active = false
+            }
+        }
         Item { Layout.fillHeight: true }
     }
 }

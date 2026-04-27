@@ -6,5 +6,8 @@
         <file>DailyLogPage.qml</file>
         <file>StatsPage.qml</file>
         <file>SettingsPage.qml</file>
+        <file>AboutPage.qml</file>
+        <file>AboutPagePopup.qml</file>
+        <file>StyledButton.qml</file>
     </qresource>
 </RCC>

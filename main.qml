@@ -38,7 +38,7 @@ ApplicationWindow {
             color: window.textColor
         }
          background: Rectangle {
-            color: window.surfaceColor  // ← Было: #16213e
+            color: window.surfaceColor
         }
     }
 
@@ -48,6 +48,7 @@ ApplicationWindow {
 
         // Страница 0: Главное меню
         Page {
+            background: Rectangle { color: window.bgColor }
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 20
@@ -57,71 +58,71 @@ ApplicationWindow {
                     text: "Добро пожаловать!"
                     font.pixelSize: 22
                     font.bold: true
-                    color: "#00d9ff"
+                    color: window.accentColor
                     Layout.alignment: Qt.AlignHCenter
                 }
 
                 Label {
                     text: "Сегодня: " + window.selectedDate
-                    color: "#aaaaaa"
+                    color: window.accentColor
                     Layout.alignment: Qt.AlignHCenter
                 }
 
-                Button {
+                StyledButton {
                     text: "📊 Калькулятор"
                     Layout.fillWidth: true
                     background: Rectangle {
-                            color: window.theme[window.appTheme].card  // ← Было: #2d2d44
+                            color: window.cardColor
                             radius: 8
                         }
                     contentItem: Text {
                             text: parent.text
-                            color: window.theme[window.appTheme].text  // ← Было: white
+                            color: window.textColor
                             horizontalAlignment: Text.AlignHCenter
                         }
                     onClicked: currentPage = 1
                 }
 
-                Button {
+                StyledButton {
                     text: "🍎 Дневник"
                     Layout.fillWidth: true
                     background: Rectangle {
-                            color: window.theme[window.appTheme].card  // ← Было: #2d2d44
+                            color: window.cardColor
                             radius: 8
                         }
                     contentItem: Text {
                             text: parent.text
-                            color: window.theme[window.appTheme].text  // ← Было: white
+                            color: window.textColor
                             horizontalAlignment: Text.AlignHCenter
                         }
                     onClicked: currentPage = 2
                 }
 
-                Button {
+                StyledButton {
                     text: "📈 Статистика"
                     Layout.fillWidth: true
                     background: Rectangle {
-                            color: window.theme[window.appTheme].card  // ← Было: #2d2d44
+                            color: window.cardColor
                             radius: 8
                         }
                     contentItem: Text {
                             text: parent.text
-                            color: window.theme[window.appTheme].text  // ← Было: white
+                            color: window.textColor
                             horizontalAlignment: Text.AlignHCenter
                         }
                     onClicked: currentPage = 3
                 }
 
-                Button {
+                StyledButton {
                     text: "⚙️ Настройки"
                     Layout.fillWidth: true
                     background: Rectangle {
-                            color: window.theme[window.appTheme].card  // ← Было: #2d2d44
+                            color: window.cardColor
                             radius: 8
                         }
                     contentItem: Text {
                             text: parent.text
-                            color: window.theme[window.appTheme].text  // ← Было: white
+                            color: window.textColor
                             horizontalAlignment: Text.AlignHCenter
                         }
                     onClicked: currentPage = 4  // Новая страница
@@ -133,6 +134,8 @@ ApplicationWindow {
 
         // Страница 1: Калькулятор
         Page {
+            background: Rectangle { color: window.bgColor }
+
             Loader {
                 anchors.fill: parent
                 source: "CalculatorPage.qml"
@@ -143,6 +146,8 @@ ApplicationWindow {
 
         // Страница 2: Дневник
         Page {
+            background: Rectangle { color: window.bgColor }
+
             Loader {
                 anchors.fill: parent
                 source: "DailyLogPage.qml"
@@ -156,6 +161,8 @@ ApplicationWindow {
 
         // Страница 3: Статистика
         Page {
+            background: Rectangle { color: window.bgColor }
+
             Loader {
                 anchors.fill: parent
                 source: "StatsPage.qml"
@@ -166,6 +173,8 @@ ApplicationWindow {
 
         // Страница 4: Настройки
         Page {
+            background: Rectangle { color: window.bgColor }
+
             Loader {
                 anchors.fill: parent
                 source: "SettingsPage.qml"
@@ -177,7 +186,7 @@ ApplicationWindow {
 
     footer: TabBar {
         currentIndex: currentPage
-        background: Rectangle { color: "#16213e" }
+        background: Rectangle { color: window.surfaceColor }
         TabButton { text: "🏠"; onClicked: currentPage = 0 }
         TabButton { text: "📊"; onClicked: currentPage = 1 }
         TabButton { text: "🍎"; onClicked: currentPage = 2 }
