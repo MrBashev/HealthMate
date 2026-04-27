@@ -44,5 +44,6 @@ HEADERS += \
 DISTFILES += \
     CalculatorPage.qml \
     DailyLogPage.qml \
+    SettingsPage.qml \
     StatsPage.qml \
     android/AndroidManifest.xml

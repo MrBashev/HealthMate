@@ -14,12 +14,15 @@ Page {
         Button {
             text: "← Назад"
             Layout.fillWidth: true
-            background: Rectangle { color: "#2d2d44"; radius: 8 }
-            contentItem: Text {
-                text: parent.text
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-            }
+            background: Rectangle {
+                           color: window.theme[window.appTheme].card
+                           radius: 8
+                       }
+                       contentItem: Text {
+                           text: parent.text
+                           color: window.theme[window.appTheme].text
+                           horizontalAlignment: Text.AlignHCenter
+                       }
             onClicked: backClicked()
         }
 
@@ -28,8 +31,13 @@ Page {
             id: ageField
             placeholderText: "Возраст (лет)"
             Layout.fillWidth: true
-            inputMethodHints: Qt.ImhDigitsOnly
-            background: Rectangle { color: "#2d2d44"; radius: 4 }
+                        inputMethodHints: Qt.ImhDigitsOnly
+                        color: window.theme[window.appTheme].text
+                        placeholderTextColor: window.theme[window.appTheme].textSecondary
+                        background: Rectangle {
+                            color: window.theme[window.appTheme].card
+                            radius: 4
+                        }
         }
 
         TextField {
@@ -44,8 +52,13 @@ Page {
             id: weightField
             placeholderText: "Вес (кг)"
             Layout.fillWidth: true
-            inputMethodHints: Qt.ImhDigitsOnly
-            background: Rectangle { color: "#2d2d44"; radius: 4 }
+                        inputMethodHints: Qt.ImhDigitsOnly
+                        color: window.theme[window.appTheme].text
+                        placeholderTextColor: window.theme[window.appTheme].textSecondary
+                        background: Rectangle {
+                            color: window.theme[window.appTheme].card
+                            radius: 4
+                        }
         }
 
         // Активность
@@ -53,20 +66,32 @@ Page {
             id: activityBox
             Layout.fillWidth: true
             model: ["Сидячий", "Лёгкая", "Средняя", "Высокая", "Тяжёлая"]
-            background: Rectangle { color: "#2d2d44"; radius: 4 }
+            currentIndex: 2
+                       background: Rectangle {
+                           color: window.theme[window.appTheme].card
+                           radius: 4
+                       }
+                       contentItem: Text {
+                           text: activityBox.currentText
+                           color: window.theme[window.appTheme].text
+                           verticalAlignment: Text.AlignVCenter
+                       }
         }
 
         // Кнопка Рассчитать
         Button {
             text: "Рассчитать"
             Layout.fillWidth: true
-            background: Rectangle { color: "#00d9ff"; radius: 8 }
-            contentItem: Text {
-                text: parent.text
-                color: "black"
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-            }
+            background: Rectangle {
+                           color: window.theme[window.appTheme].accent
+                           radius: 8
+                       }
+                       contentItem: Text {
+                           text: parent.text
+                           color: window.theme[window.appTheme].accentText
+                           font.bold: true
+                           horizontalAlignment: Text.AlignHCenter
+                       }
             onClicked: {
                 var age = parseInt(ageField.text) || 25
                 var height = parseFloat(heightField.text) || 170
@@ -89,7 +114,7 @@ Page {
         // Результат
         Label {
             id: resultLabel
-            color: "white"
+            color: window.theme[window.appTheme].text
             wrapMode: Text.WordWrap
             font.pixelSize: 16
         }
@@ -97,7 +122,7 @@ Page {
         // БЖУ рекомендации
         Label {
             id: macrosLabel
-            color: "#aaaaaa"
+            color: window.theme[window.appTheme].textSecondary
             wrapMode: Text.WordWrap
             font.pixelSize: 14
         }

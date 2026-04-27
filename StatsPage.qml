@@ -13,15 +13,15 @@ Page {
         Button {
             text: "← Назад"
             Layout.fillWidth: true
-            background: Rectangle { color: "#2d2d44"; radius: 8 }
-            contentItem: Text { text: parent.text; color: "white"; horizontalAlignment: Text.AlignHCenter }
+            background: Rectangle { color: window.theme[window.appTheme].card; radius: 8 }
+            contentItem: Text { text: parent.text; color: window.theme[window.appTheme].text; horizontalAlignment: Text.AlignHCenter }
             onClicked: backClicked()
         }
 
         Label {
             text: "За последнюю неделю:"
             font.bold: true
-            color: "#00d9ff"
+            color: window.theme[window.appTheme].accent
             font.pixelSize: 18
         }
 
@@ -31,20 +31,23 @@ Page {
             model: DataService.getWeekStats(new Date().toISOString().split('T')[0])
             delegate: ItemDelegate {
                 width: parent.width
-                background: Rectangle { color: pressed ? "#2d2d44" : "transparent"; radius: 8 }
+                bbackground: Rectangle {
+                    color: pressed ? window.theme[window.appTheme].card : "transparent"
+                    radius: 8
+                }
                 contentItem: ColumnLayout {
                     spacing: 4
 
                     Text {
                         text: "📅 " + modelData.date
-                        color: "#00d9ff"
+                        color: window.theme[window.appTheme].accent
                         font.bold: true
                         font.pixelSize: 14
                     }
 
                     Text {
                         text: "🔥 " + modelData.calories + " ккал"
-                        color: "white"
+                        color: window.theme[window.appTheme].text
                         font.pixelSize: 13
                     }
 

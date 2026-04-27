@@ -43,8 +43,8 @@ Page {
         Button {
             text: "← Назад"
             Layout.fillWidth: true
-            background: Rectangle { color: "#2d2d44"; radius: 8 }
-            contentItem: Text { text: parent.text; color: "white"; horizontalAlignment: Text.AlignHCenter }
+            background: Rectangle { color: window.theme[window.appTheme].card; radius: 8 }
+            contentItem: Text { text: parent.text; color: window.theme[window.appTheme].text; horizontalAlignment: Text.AlignHCenter }
             onClicked: backClicked()
         }
 
@@ -64,12 +64,14 @@ Page {
                     Layout.preferredWidth: 45
                     Layout.preferredHeight: 60
                     background: Rectangle {
-                        color: currentDay === modelData.date ? "#00d9ff" : "#2d2d44"
-                        radius: 8
-                    }
+                            color: currentDay === modelData.date ?
+                                   window.theme[window.appTheme].accent :
+                                   window.theme[window.appTheme].card
+                            radius: 8
+                        }
                     contentItem: Text {
                         text: parent.text
-                        color: "white"
+                        color: window.theme[window.appTheme].text
                         font.pixelSize: 11
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -97,15 +99,16 @@ Page {
         // === ПОИСК ПРОДУКТОВ ===
         Label {
             text: "Поиск продукта:"
-            color: "white"
+            color: window.theme[window.appTheme].text
             font.bold: true
         }
 
         TextField {
             id: searchField
+            placeholderTextColor: window.theme[window.appTheme].textSecondary
             placeholderText: "🔍 Начните вводить название..."
             Layout.fillWidth: true
-            background: Rectangle { color: "#2d2d44"; radius: 4 }
+            background: Rectangle { color: window.theme[window.appTheme].card; radius: 4 }
             onTextChanged: foodList.model = DataService.searchFoods(searchField.text)
         }
 
@@ -118,10 +121,10 @@ Page {
             clip: true
             delegate: ItemDelegate {
                 width: parent.width
-                background: Rectangle { color: pressed ? "#3d3d5c" : "transparent" }
+                background: Rectangle { color: pressed ? window.theme[window.appTheme].card : "transparent" }
                 contentItem: Text {
                     text: modelData.name + " (" + modelData.calories + " ккал/100г)"
-                    color: "white"
+                    color: window.theme[window.appTheme].text
                 }
                 onClicked: {
                     selectedFoodId = modelData.id
