@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 Page {
+    background: Rectangle { color: window.bgColor }
     signal backClicked()
 
     ColumnLayout {
@@ -10,18 +11,18 @@ Page {
         anchors.margins: 16
         spacing: 12
 
-        Button {
+        StyledButton {
             text: "← Назад"
             Layout.fillWidth: true
-            background: Rectangle { color: "#2d2d44"; radius: 8 }
-            contentItem: Text { text: parent.text; color: "white"; horizontalAlignment: Text.AlignHCenter }
+            background: Rectangle { color: window.cardColor; radius: 8 }
+            contentItem: Text { text: parent.text; color: window.textColor; horizontalAlignment: Text.AlignHCenter }
             onClicked: backClicked()
         }
 
         Label {
             text: "За последнюю неделю:"
             font.bold: true
-            color: "#00d9ff"
+            color: window.accentColor
             font.pixelSize: 18
         }
 
@@ -31,20 +32,20 @@ Page {
             model: DataService.getWeekStats(new Date().toISOString().split('T')[0])
             delegate: ItemDelegate {
                 width: parent.width
-                background: Rectangle { color: pressed ? "#2d2d44" : "transparent"; radius: 8 }
+                background: Rectangle { color: pressed ? window.cardColor : "transparent"; radius: 8 }
                 contentItem: ColumnLayout {
                     spacing: 4
 
                     Text {
                         text: "📅 " + modelData.date
-                        color: "#00d9ff"
+                        color: window.accentColor
                         font.bold: true
                         font.pixelSize: 14
                     }
 
                     Text {
                         text: "🔥 " + modelData.calories + " ккал"
-                        color: "white"
+                        color: window.textColor
                         font.pixelSize: 13
                     }
 
@@ -70,7 +71,7 @@ Page {
                     Rectangle {
                         Layout.fillWidth: true
                         height: 1
-                        color: "#333333"
+                        color: window.borderColor
                     }
                 }
             }
