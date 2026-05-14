@@ -341,3 +341,39 @@ void DataService::setCurrentDate(const QString &date) {
         emit dateChanged();
     }
 }
+QVariantMap DataService::getTodayMacros() {
+    QVariantMap result;
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+
+    QSqlQuery query;
+    query.prepare(R"(
+        SELECT
+            SUM(f.protein * d.grams / 100.0) as total_protein,
+            SUM(f.fat * d.grams / 100.0) as total_fat,
+            SUM(f.carbs * d.grams / 100.0) as total_carbs
+        FROM daily_log d
+        JOIN food_items f ON d.food_id = f.id
+        WHERE d.log_date = ?
+    )");
+    query.addBindValue(today);
+
+    double protein = 0, fat = 0, carbs = 0;
+
+    if (query.exec() && query.next()) {
+        protein = query.value(0).toDouble();
+        fat = query.value(1).toDouble();
+        carbs = query.value(2).toDouble();
+    }
+
+    result["protein"] = protein;
+    result["fat"] = fat;
+    result["carbs"] = carbs;
+    result["total"] = protein + fat + carbs;
+
+    qDebug() << "[DB] БЖУ за сегодня:";
+    qDebug() << "  Белки:" << protein << "г";
+    qDebug() << "  Жиры:" << fat << "г";
+    qDebug() << "  Углеводы:" << carbs << "г";
+
+    return result;
+}

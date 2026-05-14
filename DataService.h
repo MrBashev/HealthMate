@@ -16,6 +16,7 @@ public:
 
     Q_INVOKABLE QVariantList getWeekCalories(QString endDate);
     Q_INVOKABLE bool initDatabase();
+    Q_INVOKABLE QVariantMap getTodayMacros();
     Q_INVOKABLE bool clearDayLogs(QString date);
     Q_INVOKABLE QVariantList searchFoods(QString query);
     Q_INVOKABLE QVariantList getAllFoods();
