@@ -9,5 +9,6 @@
         <file>AboutPage.qml</file>
         <file>AboutPagePopup.qml</file>
         <file>StyledButton.qml</file>
+        <file>ChartsPage.qml</file>
     </qresource>
 </RCC>

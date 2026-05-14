@@ -33,7 +33,7 @@ ApplicationWindow {
 
     header: ToolBar {
         contentItem: Label {
-            text: "HealthMate v0.6"
+            text: "HealthMate v0.7"
             font.bold: true
             color: window.textColor
         }
@@ -114,6 +114,14 @@ ApplicationWindow {
                 }
 
                 StyledButton {
+                    text: "📊 Графики"
+                    Layout.fillWidth: true
+                    background: Rectangle { color: window.cardColor; radius: 8 }
+                    contentItem: Text { text: parent.text; color: window.textColor; horizontalAlignment: Text.AlignHCenter }
+                    onClicked: currentPage = 4  // Новая страница
+                }
+
+                StyledButton {
                     text: "⚙️ Настройки"
                     Layout.fillWidth: true
                     background: Rectangle {
@@ -125,7 +133,7 @@ ApplicationWindow {
                             color: window.textColor
                             horizontalAlignment: Text.AlignHCenter
                         }
-                    onClicked: currentPage = 4  // Новая страница
+                    onClicked: currentPage = 5  // Новая страница
                 }
 
                 Item { Layout.fillHeight: true }
@@ -171,17 +179,29 @@ ApplicationWindow {
             }
         }
 
-        // Страница 4: Настройки
+        // Страница 4: Графики
+        Page {
+            background: Rectangle { color: window.bgColor }
+            Loader {
+                anchors.fill: parent
+                source: "ChartsPage.qml"
+                active: window.currentPage === 4
+                onLoaded: item.backClicked.connect(() => currentPage = 0)
+            }
+        }
+
+        // Страница 5: Настройки
         Page {
             background: Rectangle { color: window.bgColor }
 
             Loader {
                 anchors.fill: parent
                 source: "SettingsPage.qml"
-                active: currentPage === 4
+                active: currentPage === 5
                 onLoaded: item.backClicked.connect(() => currentPage = 0)
             }
         }
+
     }
 
     footer: TabBar {
@@ -191,6 +211,7 @@ ApplicationWindow {
         TabButton { text: "📊"; onClicked: currentPage = 1 }
         TabButton { text: "🍎"; onClicked: currentPage = 2 }
         TabButton { text: "📈"; onClicked: currentPage = 3 }
-        TabButton { text: "⚙️"; onClicked: currentPage = 4 }
+        TabButton { text: "📉"; onClicked: currentPage = 4 }
+        TabButton { text: "⚙️"; onClicked: currentPage = 5 }
     }
 }

@@ -1,5 +1,5 @@
 QT += \
-  quick sql
+  quick sql graphs
 
 
 SOURCES += \
@@ -43,23 +43,13 @@ HEADERS += \
 
 DISTFILES += \
     AboutPage.qml \
-    AboutPage.qml \
     AboutPagePopup.qml \
     CalculatorPage.qml \
+    ChartsPage.qml \
     DailyLogPage.qml \
+    FoodPage.qml \
     SettingsPage.qml \
     StatsPage.qml \
-    StatsPage.qml \
-    StyledButton.qml \
-    android/AndroidManifest.xml \
-    main.qml \
-    page/SettingsPage.qml \
-    page/StatsPage.qml \
-    qml/main.qml \
-    qml/pages/AboutPage.qml \
-    qml/pages/AboutPagePopup.qml \
-    qml/pages/CalculatorPage.qml \
-    qml/pages/DailyLogPage.qml \
-    qml/pages/FoodPage.qml \
-    qml/pages/SettingsPage.qml \
-    qml/pages/StatsPage.qml
+    StyledButton.qml
+
+

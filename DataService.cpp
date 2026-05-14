@@ -102,6 +102,42 @@ bool DataService::initDatabase() {
     return true;
 }
 
+QVariantList DataService::getWeekCalories(QString endDate) {
+    QVariantList result;
+    QSqlQuery query;
+
+    // Запрос: сумма калорий по дням за последние 7 дней
+    query.prepare(R"(
+        SELECT
+            log_date,
+            SUM(f.calories_per_100g * d.grams / 100.0) as total_cal
+        FROM daily_log d
+        JOIN food_items f ON d.food_id = f.id
+        WHERE log_date <= ? AND log_date >= date(?, '-6 days')
+        GROUP BY log_date
+        ORDER BY log_date ASC
+    )");
+    query.addBindValue(endDate);
+    query.addBindValue(endDate);
+
+    qDebug() << "[DB] Запрос графика за неделю до:" << endDate;
+
+    if (query.exec()) {
+        while (query.next()) {
+            QVariantMap day;
+            day["date"] = query.value(0);  // "2025-04-25"
+            day["calories"] = query.value(1).toInt();  // 1450
+            result.append(day);
+            qDebug() << "  " << query.value(0).toString()
+                     << ":" << query.value(1).toInt() << "ккал";
+        }
+    } else {
+        qDebug() << "[DB] Ошибка запроса графика:" << query.lastError().text();
+    }
+
+    return result;
+}
+
 QVariantList DataService::getAllFoods() {
     QVariantList result;
     QSqlQuery query("SELECT id, name, calories_per_100g FROM food_items");

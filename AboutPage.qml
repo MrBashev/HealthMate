@@ -51,7 +51,7 @@ Page {
             color: window.textSecondaryColor
         }
         Label {
-            text: "0.6.0"
+            text: "0.7.0"
             font.pixelSize: 18
             font.bold: true
             color: window.textColor
@@ -102,7 +102,7 @@ Page {
             font.bold: true
         }
         Label {
-            text: "github.com/ТВОЙ_НИК/HealthMate"
+            text: "github.com/MrBashev/HealthMate"
             color: window.accentColor
             font.pixelSize: 12
         }
