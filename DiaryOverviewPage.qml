@@ -12,6 +12,31 @@ Page {
         "calories": 0, "protein": 0, "fat": 0, "carbs": 0
     }
 
+    property int waterGoal: 2500
+    property int waterToday: 0
+
+    // ✅ Локальная дата YYYY-MM-DD (без UTC-сдвигов)
+        function getTodayStr() {
+            var d = new Date()
+            return d.getFullYear() + '-' +
+                   String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                   String(d.getDate()).padStart(2, '0')
+        }
+        // ✅ Проверка будущего: строковое сравнение идеально работает для YYYY-MM-DD
+           function isFuture(dateStr) {
+               return dateStr > getTodayStr()
+           }
+
+
+    function updateWater() {
+        waterToday = Number(DataService.getWaterSum(selectedDate))
+    }
+
+    function addWaterEntry(ml) {
+        DataService.addWater(selectedDate, ml)
+        updateWater()
+    }
+
     function getWeekDates() {
         var dates = []
         var today = new Date()
@@ -30,16 +55,16 @@ Page {
         }
         return dates
     }
-
-    onSelectedDateChanged: {
-        var summary = DataService.getDaySummary(selectedDate)
-        daySummary = {
-            "calories": summary.calories,
-            "protein": summary.protein,
-            "fat": summary.fat,
-            "carbs": summary.carbs
+        onSelectedDateChanged: {
+            var summary = DataService.getDaySummary(selectedDate)
+            daySummary = {
+                "calories": summary.calories,
+                "protein": summary.protein,
+                "fat": summary.fat,
+                "carbs": summary.carbs
+            }
+            updateWater()
         }
-    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -153,7 +178,128 @@ Page {
                 }
             }
         }
+        // === ВОДНЫЙ БАЛАНС ===
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 180
+            color: window.cardColor
+            radius: 12
+            border.color: window.borderColor
+            border.width: 1
 
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 14
+                spacing: 10
+
+                RowLayout {
+                    spacing: 8
+                    Label { text: "💧 Вода"; color: window.textColor; font.pixelSize: 14; font.bold: true }
+                    Label {
+                        text: waterToday + " / " + waterGoal + " мл"
+                        color: waterToday >= waterGoal ? "#6bcb77" : window.textSecondaryColor
+                        font.pixelSize: 12
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignRight
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 10
+                    color: window.bgColor
+                    radius: 5
+                    clip: true
+                    Rectangle {
+                        width: parent.width * Math.min(waterToday / waterGoal, 1)
+                        height: parent.height
+                        color: {
+                            if (waterToday >= 5000) return "#ff6b6b"
+                            if (waterToday >= waterGoal) return "#6bcb77"
+                            return "#00d9ff"
+                        }
+                        radius: 5
+                        Behavior on width { NumberAnimation { duration: 300 } }
+                    }
+                }
+
+                // Предупреждение: Будущее
+                Label {
+                    text: "⚠️ Нельзя добавлять воду в будущее!"
+                    color: "#ff6b6b"
+                    font.bold: true
+                    visible: isFuture(selectedDate)
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                // Предупреждение: Перебор
+                Label {
+                    text: "⚠️ Вы выпили достаточно!"
+                    color: "#ff6b6b"
+                    font.bold: true
+                    visible: !isFuture(selectedDate) && waterToday >= 5000
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Button {
+                        text: "+250 мл"
+                        Layout.fillWidth: true
+                        enabled: !isFuture(selectedDate) && waterToday < 5000
+                        background: Rectangle {
+                            color: enabled ? window.accentColor : window.textSecondaryColor
+                            radius: 8
+                        }
+                        contentItem: Text {
+                            text: parent.text
+                            color: enabled ? window.accentTextColor : "#888888"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        onClicked: addWaterEntry(250)
+                    }
+
+                    Button {
+                        text: "+500 мл"
+                        Layout.fillWidth: true
+                        enabled: !isFuture(selectedDate) && waterToday < 5000
+                        background: Rectangle {
+                            color: enabled ? window.accentColor : window.textSecondaryColor
+                            radius: 8
+                        }
+                        contentItem: Text {
+                            text: parent.text
+                            color: enabled ? window.accentTextColor : "#888888"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        onClicked: addWaterEntry(500)
+                    }
+
+                    Button {
+                        text: "🗑️ Сброс"
+                        Layout.fillWidth: true
+                        enabled: !isFuture(selectedDate)
+                        background: Rectangle {
+                            color: enabled ? window.errorColor : window.textSecondaryColor
+                            radius: 8
+                        }
+                        contentItem: Text {
+                            text: parent.text
+                            color: enabled ? window.textColor : "#888888"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        onClicked: {
+                            DataService.clearWater(selectedDate)
+                            updateWater()
+                        }
+                    }
+                }
+            }
+        }
         // === КНОПКА УПРАВЛЕНИЯ ===
         Button {
             text: " Управление записями"

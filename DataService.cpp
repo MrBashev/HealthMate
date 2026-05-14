@@ -34,6 +34,15 @@ bool DataService::initDatabase() {
         )
     )");
 
+    // В DataService::initDB()
+    query.exec(R"(
+    CREATE TABLE IF NOT EXISTS water_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        ml INTEGER NOT NULL
+    )
+)");
+
     if (query.lastError().isValid()) {
         qDebug() << "[DB] Ошибка создания food_items:" << query.lastError().text();
     }
@@ -376,4 +385,27 @@ QVariantMap DataService::getTodayMacros() {
     qDebug() << "  Углеводы:" << carbs << "г";
 
     return result;
+}
+
+int DataService::getWaterSum(QString date) {
+    QSqlQuery q;
+    q.prepare("SELECT SUM(ml) FROM water_logs WHERE date = ?");
+    q.addBindValue(date);
+    if (q.exec() && q.next()) return q.value(0).toInt();
+    return 0;
+}
+
+bool DataService::addWater(QString date, int ml) {
+    QSqlQuery q;
+    q.prepare("INSERT INTO water_logs (date, ml) VALUES (?, ?)");
+    q.addBindValue(date);
+    q.addBindValue(ml);
+    return q.exec();
+}
+
+bool DataService::clearWater(QString date) {
+    QSqlQuery q;
+    q.prepare("DELETE FROM water_logs WHERE date = ?");
+    q.addBindValue(date);
+    return q.exec();
 }
