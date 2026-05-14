@@ -158,7 +158,7 @@ ApplicationWindow {
 
             Loader {
                 anchors.fill: parent
-                source: "DailyLogPage.qml"
+                source: "DiaryOverviewPage.qml"
                 active: currentPage === 2
                 onLoaded: {
                     item.backClicked.connect(() => currentPage = 0)

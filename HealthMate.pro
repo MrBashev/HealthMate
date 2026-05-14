@@ -46,7 +46,8 @@ DISTFILES += \
     AboutPagePopup.qml \
     CalculatorPage.qml \
     ChartsPage.qml \
-    DailyLogPage.qml \
+    DiaryDetailPage.qml \
+    DiaryOverviewPage.qml \
     FoodPage.qml \
     SettingsPage.qml \
     StatsPage.qml \
