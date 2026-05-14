@@ -8,10 +8,16 @@ Page {
 
     background: Rectangle { color: window.bgColor }
 
-    property var daySummary: {
-        "calories": 0, "protein": 0, "fat": 0, "carbs": 0
-    }
+    property var goals: ({
+            "calories": 2000,
+            "protein": 150,
+            "fat": 70,
+            "carbs": 250,
+        })
 
+    property var daySummary: {
+            "calories": 0, "protein": 0, "fat": 0, "carbs": 0
+        }
     property int waterGoal: 2500
     property int waterToday: 0
 
@@ -55,7 +61,12 @@ Page {
         }
         return dates
     }
+    // ✅ Загружаем цели при смене даты
         onSelectedDateChanged: {
+            // 1. Загружаем цели
+            goals = DataService.getGoals(selectedDate)
+
+            // 2. Загружаем статистику
             var summary = DataService.getDaySummary(selectedDate)
             daySummary = {
                 "calories": summary.calories,
@@ -63,6 +74,8 @@ Page {
                 "fat": summary.fat,
                 "carbs": summary.carbs
             }
+
+            // 3. Обновляем воду
             updateWater()
         }
 

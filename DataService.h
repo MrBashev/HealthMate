@@ -16,6 +16,8 @@ public:
 
     Q_INVOKABLE QVariantList getWeekCalories(QString endDate);
     Q_INVOKABLE bool initDatabase();
+    Q_INVOKABLE QVariantMap getGoals(QString date);
+    Q_INVOKABLE bool saveGoals(QString date, int calories, double protein, double fat, double carbs, int water);
     Q_INVOKABLE int getWaterSum(QString date);
     Q_INVOKABLE bool addWater(QString date, int ml);
     Q_INVOKABLE bool clearWater(QString date);

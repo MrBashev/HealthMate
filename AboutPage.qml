@@ -2,31 +2,31 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
-Page {
-    signal backClicked()
+Dialog {
+    id: dialog
+    title: "О приложении"
+    modal: true
+    anchors.centerIn: parent
+    padding: 20
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 16
-        spacing: 20
+    // Фон под тему
+    background: Rectangle {
+        color: window.bgColor
+        radius: 12
+        border.color: window.borderColor
+        border.width: 1
+    }
 
-        // Кнопка Назад
-        StyledButton {
-            text: "← Назад"
-            Layout.fillWidth: true
-            background: Rectangle { color: window.cardColor; radius: 8 }
-            contentItem: Text {
-                text: parent.text
-                color: window.textColor
-                horizontalAlignment: Text.AlignHCenter
-            }
-            onClicked: backClicked()
-        }
+    // Контент
+    contentItem: ColumnLayout {
+        spacing: 16
+        Layout.preferredWidth: 300
 
-        // Логотип / Заголовок
+        // Логотип/Заголовок
         Label {
             text: "🏥 HealthMate"
-            font.pixelSize: 32
+            font.pixelSize: 24
             font.bold: true
             color: window.accentColor
             Layout.alignment: Qt.AlignHCenter
@@ -34,9 +34,11 @@ Page {
 
         Label {
             text: "Ваш персональный трекер питания"
-            font.pixelSize: 14
+            font.pixelSize: 12
             color: window.textSecondaryColor
-            Layout.alignment: Qt.AlignHCenter
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
         }
 
         Rectangle {
@@ -49,10 +51,11 @@ Page {
         Label {
             text: "Версия"
             color: window.textSecondaryColor
+            font.pixelSize: 11
         }
         Label {
-            text: "0.7.0"
-            font.pixelSize: 18
+            text: "0.7.5"
+            font.pixelSize: 16
             font.bold: true
             color: window.textColor
         }
@@ -61,6 +64,7 @@ Page {
         Label {
             text: "О приложении"
             color: window.textSecondaryColor
+            font.pixelSize: 11
             font.bold: true
         }
         Label {
@@ -76,18 +80,21 @@ Page {
         Label {
             text: "Технологии"
             color: window.textSecondaryColor
+            font.pixelSize: 11
             font.bold: true
         }
         Label {
             text: "• C++17\n• Qt 6.11\n• QML\n• SQLite"
             color: window.textColor
             font.family: "Consolas"
+            font.pixelSize: 11
         }
 
-        // Автор
+        // Разработчик
         Label {
             text: "Разработчик"
             color: window.textSecondaryColor
+            font.pixelSize: 11
             font.bold: true
         }
         Label {
@@ -95,37 +102,30 @@ Page {
             color: window.accentColor
         }
 
-        // GitHub
-        Label {
-            text: "GitHub"
-            color: window.textSecondaryColor
-            font.bold: true
-        }
-        Label {
-            text: "github.com/MrBashev/HealthMate"
-            color: window.accentColor
-            font.pixelSize: 12
-        }
-
-        // Лицензия
-        Label {
-            text: "Лицензия"
-            color: window.textSecondaryColor
-            font.bold: true
-        }
-        Label {
-            text: "MIT License"
-            color: window.textColor
-        }
-
-        Item { Layout.fillHeight: true }
-
         // Копирайт
         Label {
-            text: "© 2025 HealthMate"
+            text: "© 2026 HealthMate"
             color: window.textSecondaryColor
-            font.pixelSize: 12
+            font.pixelSize: 10
             Layout.alignment: Qt.AlignHCenter
         }
+    }
+
+    // Кнопка Закрыть
+    footer: Button {
+        text: "Закрыть"
+        Layout.fillWidth: true
+        Layout.preferredHeight: 36
+        background: Rectangle {
+            color: window.accentColor
+            radius: 8
+        }
+        contentItem: Text {
+            text: parent.text
+            color: window.accentTextColor
+            horizontalAlignment: Text.AlignHCenter
+            font.bold: true
+        }
+        onClicked: dialog.close()
     }
 }

@@ -43,7 +43,6 @@ HEADERS += \
 
 DISTFILES += \
     AboutPage.qml \
-    AboutPagePopup.qml \
     CalculatorPage.qml \
     ChartsPage.qml \
     DiaryDetailPage.qml \

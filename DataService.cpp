@@ -34,7 +34,18 @@ bool DataService::initDatabase() {
         )
     )");
 
-    // В DataService::initDB()
+    query.exec(R"(
+    CREATE TABLE IF NOT EXISTS user_goals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT UNIQUE NOT NULL,
+        calories INTEGER DEFAULT 2000,
+        protein REAL DEFAULT 150,
+        fat REAL DEFAULT 70,
+        carbs REAL DEFAULT 250,
+        water INTEGER DEFAULT 2000
+    )
+)");
+
     query.exec(R"(
     CREATE TABLE IF NOT EXISTS water_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -407,5 +418,44 @@ bool DataService::clearWater(QString date) {
     QSqlQuery q;
     q.prepare("DELETE FROM water_logs WHERE date = ?");
     q.addBindValue(date);
+    return q.exec();
+}
+
+QVariantMap DataService::getGoals(QString date) {
+    QVariantMap result;
+    QSqlQuery q;
+    q.prepare("SELECT calories, protein, fat, carbs, water FROM user_goals WHERE date = ?");
+    q.addBindValue(date);
+
+    // Значения по умолчанию
+    result["calories"] = 2000;
+    result["protein"] = 150.0;
+    result["fat"] = 70.0;
+    result["carbs"] = 250.0;
+    result["water"] = 2000;
+
+    if (q.exec() && q.next()) {
+        result["calories"] = q.value(0).toInt();
+        result["protein"] = q.value(1).toDouble();
+        result["fat"] = q.value(2).toDouble();
+        result["carbs"] = q.value(3).toDouble();
+        result["water"] = q.value(4).toInt();
+    }
+
+    return result;
+}
+
+bool DataService::saveGoals(QString date, int calories, double protein, double fat, double carbs, int water) {
+    QSqlQuery q;
+    q.prepare(R"(
+        INSERT OR REPLACE INTO user_goals (date, calories, protein, fat, carbs, water)
+        VALUES (?, ?, ?, ?, ?, ?)
+    )");
+    q.addBindValue(date);
+    q.addBindValue(calories);
+    q.addBindValue(protein);
+    q.addBindValue(fat);
+    q.addBindValue(carbs);
+    q.addBindValue(water);
     return q.exec();
 }
