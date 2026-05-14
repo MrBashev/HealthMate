@@ -14,6 +14,9 @@ class DataService : public QObject {
 public:
     explicit DataService(QObject *parent = nullptr);
 
+
+    Q_INVOKABLE QString exportToCSV();
+    Q_INVOKABLE QString importFromCSV(const QString &filePath);
     Q_INVOKABLE QVariantList getWeekCalories(QString endDate);
     Q_INVOKABLE bool initDatabase();
     Q_INVOKABLE QVariantMap getGoals(QString date);

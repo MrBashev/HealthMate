@@ -1,6 +1,8 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs
+
 
 Page {
     signal backClicked()
@@ -186,6 +188,44 @@ Page {
             }
         }
 
+        Label {
+            text: " Резервное копирование"
+            color: window.textSecondaryColor
+            font.pixelSize: 11
+            font.bold: true
+        }
+
+        // === КНОПКИ ===
+         RowLayout {
+             spacing: 8
+
+             Button {
+                 text: "📤 Экспорт CSV"
+                 Layout.fillWidth: true
+                 Layout.preferredHeight: 40
+                 background: Rectangle { color: window.successColor; radius: 8 }
+                 contentItem: Text { text: parent.text; color: window.textColor; horizontalAlignment: Text.AlignHCenter }
+                 onClicked: {
+                     fileDialog.fileMode = FileDialog.SaveFile  // ✅ Валидный enum
+                     fileDialog.selectedFile = "file:///" + "HealthMate_Backup.csv"
+                     fileDialog.open()
+                 }
+             }
+
+             Button {
+                 text: " Импорт CSV"
+                 Layout.fillWidth: true
+                 Layout.preferredHeight: 40
+                 background: Rectangle { color: window.accentColor; radius: 8 }
+                 contentItem: Text { text: parent.text; color: window.accentTextColor; horizontalAlignment: Text.AlignHCenter }
+                 onClicked: {
+                     fileDialog.fileMode = FileDialog.OpenFile  // ✅ Исправлено! (было OpenExistingFile)
+                     fileDialog.selectedFile = ""
+                     fileDialog.open()
+                 }
+             }
+         }
+
         // === КНОПКА "О ПРИЛОЖЕНИИ" ===
         Button {
             text: "ℹ️ О приложении"
@@ -213,6 +253,40 @@ Page {
         }
 
         Item { Layout.fillHeight: true }
+    }
+
+    FileDialog {
+        id: fileDialog
+        title: "Выберите файл CSV"
+        nameFilters: ["CSV files (*.csv)", "All files (*)"]
+        // ✅ Убрали shortcuts (баг Qt 6.11)
+
+        onAccepted: {
+            var path = selectedFile.toString()
+            if (path.startsWith("file:///")) path = path.slice(8)
+            else if (path.startsWith("file://")) path = path.slice(7)
+
+            var result = ""
+            if (fileMode === FileDialog.SaveFile) {
+                result = DataService.exportToCSV()
+            } else {
+                result = DataService.importFromCSV(path)
+            }
+
+            statusLabel.text = result
+            statusLabel.visible = true
+            timer.start()
+        }
+    }
+
+    Label {
+        id: statusLabel
+        text: ""
+        color: window.successColor
+        font.bold: true
+        visible: false
+        wrapMode: Text.WordWrap
+        Layout.alignment: Qt.AlignHCenter
     }
 
     Loader {
