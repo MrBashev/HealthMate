@@ -7,6 +7,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QDate>
+#include <QUrl>
 
 
 DataService::DataService(QObject *parent) : QObject(parent) {
@@ -208,16 +209,32 @@ bool DataService::addLogEntry(int foodId, double grams, QString meal, QString da
 
 QVariantList DataService::searchFoods(QString query) {
     QVariantList result;
-    QSqlQuery sqlQuery;
-    sqlQuery.prepare("SELECT id, name, calories_per_100g FROM food_items WHERE name LIKE ?");
-    sqlQuery.addBindValue("%" + query + "%");
-    sqlQuery.exec();
+    QSqlQuery q;
 
-    while (sqlQuery.next()) {
+    // ✅ Используем q, а не sqlQuery
+    q.prepare(R"(
+        SELECT id, name, calories_per_100g, protein, fat, carbs
+        FROM food_items
+        WHERE LOWER(name) LIKE LOWER(?)
+        ORDER BY name ASC
+    )");
+
+    // ✅ Используем параметр query (не searcText!)
+    q.addBindValue("%" + query + "%");
+
+    if (!q.exec()) {
+        qDebug() << "[SEARCH] Ошибка:" << q.lastError().text();
+        return result;
+    }
+
+    while (q.next()) {
         QVariantMap item;
-        item["id"] = sqlQuery.value(0);
-        item["name"] = sqlQuery.value(1);
-        item["calories"] = sqlQuery.value(2).toInt();
+        item["id"] = q.value(0);
+        item["name"] = q.value(1);
+        item["calories"] = q.value(2).toInt();
+        item["protein"] = q.value(3).toDouble();
+        item["fat"] = q.value(4).toDouble();
+        item["carbs"] = q.value(5).toDouble();
         result.append(item);
     }
 
@@ -465,76 +482,114 @@ bool DataService::saveGoals(QString date, int calories, double protein, double f
     q.addBindValue(water);
     return q.exec();
 }
+#include <QUrl>
+#include <QFileInfo>
+#include <QDir>
+#include <QStandardPaths>
 
-// === ЭКСПОРТ В CSV (ПОД ТВОЮ СХЕМУ БД) ===
-QString DataService::exportToCSV() {
-    qDebug() << "[EXPORT] === НАЧАЛО ЭКСПОРТА ===";
-    QSqlDatabase db = QSqlDatabase::database();
+QString DataService::getBackupDir() {
+    // Android: строго Downloads (единственная папка с гарантированным доступом)
+    // Desktop: Documents (привычно для пользователя)
+    QString path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    if (path.isEmpty() || path.contains("Android/data")) {
+        path = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    }
+    QDir().mkpath(path);
+    return path;
+}
 
-    QString dir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    QString fileName = dir + "/HealthMate_Backup_" + QDate::currentDate().toString("yyyy-MM-dd") + ".csv";
+QString DataService::exportToCSV(const QString &targetUri) {
+    qDebug() << "[EXPORT] Получен путь/URI:" << targetUri;
 
-    QFile file(fileName);
+    QString path = targetUri;
+    // Преобразуем file:// и content:// в понятный Qt путь
+    if (path.startsWith("file://") || path.startsWith("content://")) {
+        QUrl url(path);
+        path = url.isLocalFile() ? url.toLocalFile() : url.toString();
+    }
+
+    // Если пользователь выбрал папку, а не файл, Qt может вернуть путь без имени.
+    // Добавляем имя файла, если его нет
+    if (!path.contains(".csv", Qt::CaseInsensitive)) {
+        path += "/HealthMate_Backup_" + QDate::currentDate().toString("yyyy-MM-dd") + ".csv";
+        QDir().mkpath(QFileInfo(path).absolutePath());
+    }
+
+    QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-        return "Ошибка: Не удалось открыть файл. Закройте его в Excel!";
+        qDebug() << "[EXPORT] ❌ Не удалось открыть файл:" << path << "|" << file.errorString();
+        return "Ошибка записи: " + file.errorString();
     }
 
     QTextStream out(&file);
+    out.setGenerateByteOrderMark(true);
     out.setEncoding(QStringConverter::Utf8);
+
+    QSqlDatabase db = QSqlDatabase::database();
+    int foodCount = 0;
+    int logCount = 0;
 
     // 1. ПРОДУКТЫ
     out << "#FOOD_ITEMS\n";
     QSqlQuery q(db);
     if (!q.exec("SELECT id, name, calories_per_100g, protein, fat, carbs FROM food_items")) {
-        qDebug() << "[EXPORT] ❌ SQL Ошибка (Продукты):" << q.lastError().text();
+        qDebug() << "[EXPORT] Ошибка запроса продуктов:" << q.lastError().text();
+        out << "# SQL ERROR\n";
     } else {
-        int count = 0;
         while (q.next()) {
-            out << q.value(0).toString() << ","
-                << "\"" << q.value(1).toString().replace("\"", "\"\"") << "\","
-                << q.value(2).toString() << ","
-                << q.value(3).toString() << ","
-                << q.value(4).toString() << ","
-                << q.value(5).toString() << "\n";
-            count++;
+            QString n = q.value(1).toString();
+            n.replace(",", " ").replace("\"", "\"\"");
+            out << q.value(0).toString() << ",\"" << n << "\","
+                << q.value(2).toString() << "," << q.value(3).toString() << ","
+                << q.value(4).toString() << "," << q.value(5).toString() << "\n";
+            foodCount++;
         }
-        qDebug() << "[EXPORT] ✅ Записано продуктов:" << count;
     }
 
     // 2. ДНЕВНИК
     out << "\n#DAILY_LOGS\n";
     QSqlQuery l(db);
     if (!l.exec("SELECT d.log_date, f.name, d.grams, d.meal FROM daily_log d LEFT JOIN food_items f ON d.food_id = f.id")) {
-        qDebug() << "[EXPORT] ❌ SQL Ошибка (Дневник):" << l.lastError().text();
+        qDebug() << "[EXPORT] Ошибка запроса дневника:" << l.lastError().text();
+        out << "# SQL ERROR\n";
     } else {
-        int count = 0;
         while (l.next()) {
-            out << l.value(0).toString() << ","
-                << "\"" << l.value(1).toString().replace("\"", "\"\"") << "\","
-                << l.value(2).toString() << ","
-                << l.value(3).toString() << "\n";
-            count++;
+            QString n = l.value(1).toString();
+            n.replace(",", " ").replace("\"", "\"\"");
+            out << l.value(0).toString() << ",\"" << n << "\","
+                << l.value(2).toString() << "," << l.value(3).toString() << "\n";
+            logCount++;
         }
-        qDebug() << "[EXPORT] ✅ Записано записей дневника:" << count;
     }
 
+    out.flush();
     file.close();
-    qDebug() << "[EXPORT] === КОНЕЦ ===";
-    return "Успех: Файл сохранен в " + fileName;
+
+    qDebug() << "[EXPORT] ✅ Готово. Продуктов:" << foodCount << "| Записей:" << logCount << "| Путь:" << path;
+
+    if (foodCount == 0 && logCount == 0) {
+        return "Внимание: База пуста. Файл создан, но данных нет.";
+    }
+    return "Успех: Сохранено " + QString::number(foodCount) + " продуктов и " + QString::number(logCount) + " записей.";
 }
 
-// === ИМПОРТ ИЗ CSV (ПОД ТВОЮ СХЕМУ БД) ===
 QString DataService::importFromCSV(const QString &filePath) {
-    QFile file(filePath);
+    QString path = filePath;
+    if (path.startsWith("file://")) {
+        QUrl url(path);
+        path = url.isLocalFile() ? url.toLocalFile() : url.toString();
+    }
+
+    QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return "Ошибка: Не удалось открыть файл";
+        return "Ошибка открытия: " + file.errorString();
     }
 
     QTextStream in(&file);
     in.setEncoding(QStringConverter::Utf8);
 
     QString section = "";
-    int importedCount = 0;
+    int imported = 0;
     QSqlDatabase db = QSqlDatabase::database();
     db.transaction();
 
@@ -551,50 +606,128 @@ QString DataService::importFromCSV(const QString &filePath) {
             if (parts.size() < 4) continue;
 
             if (section == "foods") {
-                QString name = parts[1].replace("\"\"", "\"");
+                QString name = parts[1].remove('"').trimmed();
                 int cal = parts[2].toInt();
                 double p = parts[3].toDouble();
                 double f = parts[4].toDouble();
                 double c = parts[5].toDouble();
 
+                // Проверяем, есть ли продукт (без учёта регистра)
                 QSqlQuery check(db);
-                check.prepare("SELECT id FROM food_items WHERE name = ?");
+                check.prepare("SELECT id FROM food_items WHERE LOWER(TRIM(name)) = LOWER(?)");
                 check.addBindValue(name);
+
                 if (check.exec() && !check.next()) {
+                    // Нет → добавляем
                     QSqlQuery ins(db);
-                    // ✅ Точные имена колонок из твоей БД
                     ins.prepare("INSERT INTO food_items (name, calories_per_100g, protein, fat, carbs) VALUES (?, ?, ?, ?, ?)");
                     ins.addBindValue(name); ins.addBindValue(cal);
                     ins.addBindValue(p); ins.addBindValue(f); ins.addBindValue(c);
-                    if (ins.exec()) importedCount++;
+                    if (ins.exec()) imported++;
                 }
             }
             else if (section == "logs") {
-                QString date = parts[0];
-                QString foodName = parts[1].replace("\"\"", "\"");
+                QString date = parts[0].trimmed();
+                QString foodName = parts[1].remove('"').trimmed();
                 int grams = parts[2].toInt();
-                QString meal = parts[3];
+                QString meal = parts[3].trimmed();
 
+                // 1️⃣ Находим продукт (без учёта регистра)
                 QSqlQuery findFood(db);
-                findFood.prepare("SELECT id FROM food_items WHERE name = ?");
+                findFood.prepare("SELECT id FROM food_items WHERE LOWER(TRIM(name)) = LOWER(?)");
                 findFood.addBindValue(foodName);
-                if (findFood.exec() && findFood.next()) {
-                    int foodId = findFood.value(0).toInt();
-                    QSqlQuery logIns(db);
-                    // ✅ Точные имена колонок из твоей БД
-                    logIns.prepare("INSERT INTO daily_log (log_date, food_id, grams, meal) VALUES (?, ?, ?, ?)");
-                    logIns.addBindValue(date);
-                    logIns.addBindValue(foodId);
-                    logIns.addBindValue(grams);
-                    logIns.addBindValue(meal);
-                    if (logIns.exec()) importedCount++;
+
+                if (!findFood.exec() || !findFood.next()) {
+                    qDebug() << "[IMPORT] ⚠️ Продукт не найден:" << foodName;
+                    continue;
+                }
+
+                int foodId = findFood.value(0).toInt();
+
+                // 2️⃣ ГЛАВНОЕ: Проверяем, есть ли УЖЕ такая запись за эту дату
+                QSqlQuery checkLog(db);
+                checkLog.prepare("SELECT id, grams FROM daily_log WHERE log_date = ? AND food_id = ?");
+                checkLog.addBindValue(date);
+                checkLog.addBindValue(foodId);
+
+                if (checkLog.exec() && checkLog.next()) {
+                    // ✅ Запись есть → ОБНОВЛЯЕМ (не добавляем новую!)
+                    int logId = checkLog.value(0).toInt();
+                    int existingGrams = checkLog.value(1).toInt();
+
+                    QSqlQuery upd(db);
+                    upd.prepare("UPDATE daily_log SET grams = ?, meal = ? WHERE id = ?");
+                    upd.addBindValue(grams);
+                    upd.addBindValue(meal);
+                    upd.addBindValue(logId);
+
+                    if (upd.exec()) {
+                        imported++;
+                        qDebug() << "[IMPORT] 🔄 Обновлено:" << foodName << grams << "г на" << date;
+                    }
+                } else {
+                    // ❌ Записи нет → ДОБАВЛЯЕМ
+                    QSqlQuery ins(db);
+                    ins.prepare("INSERT INTO daily_log (log_date, food_id, grams, meal) VALUES (?, ?, ?, ?)");
+                    ins.addBindValue(date);
+                    ins.addBindValue(foodId);
+                    ins.addBindValue(grams);
+                    ins.addBindValue(meal);
+
+                    if (ins.exec()) {
+                        imported++;
+                        qDebug() << "[IMPORT] ➕ Добавлено:" << foodName << grams << "г на" << date;
+                    }
                 }
             }
         }
         db.commit();
-        return "Успех: Импортировано " + QString::number(importedCount) + " записей.";
+        return "Успех: Обработано " + QString::number(imported) + " записей.";
     } catch (...) {
         db.rollback();
-        return "Ошибка при чтении файла.";
+        return "Ошибка структуры файла.";
     }
+}
+
+void DataService::cleanTrash() {
+    qDebug() << "[CLEANUP] 📦 Чтение продуктов в память...";
+    QSqlQuery q("SELECT id, name FROM food_items ORDER BY id ASC");
+
+    struct RawItem { int id; QString name; };
+    QList<RawItem> items;
+    while (q.next()) {
+        items.append({q.value(0).toInt(), q.value(1).toString()});
+    }
+
+    QMap<QString, int> kept; // "чистое_имя" -> ID
+
+    for (const auto &it : items) {
+        // ✅ Исправлено: используем QChar или remove
+        QString clean = it.name;
+        clean = clean.remove('"').trimmed();  // Убираем кавычки
+        QString key = clean.toLower();        // Для сравнения
+
+        if (kept.contains(key)) {
+            // 🗑️ Дубль: удаляем
+            QSqlQuery del;
+            del.prepare("DELETE FROM food_items WHERE id = ?");
+            del.addBindValue(it.id);
+            del.exec();
+            qDebug() << "   ❌ Удалён дубль:" << it.name;
+        } else {
+            // ✅ Первый раз: запоминаем
+            kept.insert(key, it.id);
+
+            // Если были кавычки — исправляем
+            if (it.name.contains('"')) {
+                QSqlQuery upd;
+                upd.prepare("UPDATE food_items SET name = ? WHERE id = ?");
+                upd.addBindValue(clean);
+                upd.addBindValue(it.id);
+                upd.exec();
+                qDebug() << "   🧼 Убраны кавычки:" << it.name << "→" << clean;
+            }
+        }
+    }
+    qDebug() << "[CLEANUP] ✅ Готово. Осталось уникальных:" << kept.size();
 }

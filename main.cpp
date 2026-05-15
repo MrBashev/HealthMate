@@ -22,6 +22,8 @@ int main(int argc, char *argv[]) {
         qWarning() << "Failed to initialize database";
     }
 
+    dataService.cleanTrash();
+
     engine.rootContext()->setContextProperty("HealthCore", &healthCore);
     engine.rootContext()->setContextProperty("DataService", &dataService);
 

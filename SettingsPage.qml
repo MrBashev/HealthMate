@@ -189,42 +189,32 @@ Page {
         }
 
         Label {
-            text: " Резервное копирование"
-            color: window.textSecondaryColor
-            font.pixelSize: 11
-            font.bold: true
-        }
+                    text: "💾 Резервное копирование"
+                    color: window.textSecondaryColor
+                    font.pixelSize: 11
+                    font.bold: true
+                }
 
-        // === КНОПКИ ===
-         RowLayout {
-             spacing: 8
+                RowLayout {
+                    spacing: 8
+                    Button {
+                        text: "📤 Экспорт CSV"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        background: Rectangle { color: window.successColor; radius: 8 }
+                        contentItem: Text { text: parent.text; color: window.textColor; horizontalAlignment: Text.AlignHCenter }
+                        onClicked: exportDialog.open()
+                    }
 
-             Button {
-                 text: "📤 Экспорт CSV"
-                 Layout.fillWidth: true
-                 Layout.preferredHeight: 40
-                 background: Rectangle { color: window.successColor; radius: 8 }
-                 contentItem: Text { text: parent.text; color: window.textColor; horizontalAlignment: Text.AlignHCenter }
-                 onClicked: {
-                     fileDialog.fileMode = FileDialog.SaveFile  // ✅ Валидный enum
-                     fileDialog.selectedFile = "file:///" + "HealthMate_Backup.csv"
-                     fileDialog.open()
-                 }
-             }
-
-             Button {
-                 text: " Импорт CSV"
-                 Layout.fillWidth: true
-                 Layout.preferredHeight: 40
-                 background: Rectangle { color: window.accentColor; radius: 8 }
-                 contentItem: Text { text: parent.text; color: window.accentTextColor; horizontalAlignment: Text.AlignHCenter }
-                 onClicked: {
-                     fileDialog.fileMode = FileDialog.OpenFile  // ✅ Исправлено! (было OpenExistingFile)
-                     fileDialog.selectedFile = ""
-                     fileDialog.open()
-                 }
-             }
-         }
+                    Button {
+                        text: "📥 Импорт CSV"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        background: Rectangle { color: window.accentColor; radius: 8 }
+                        contentItem: Text { text: parent.text; color: window.accentTextColor; horizontalAlignment: Text.AlignHCenter }
+                        onClicked: importDialog.open()
+                    }
+                }
 
         // === КНОПКА "О ПРИЛОЖЕНИИ" ===
         Button {
@@ -255,29 +245,38 @@ Page {
         Item { Layout.fillHeight: true }
     }
 
-    FileDialog {
-        id: fileDialog
-        title: "Выберите файл CSV"
-        nameFilters: ["CSV files (*.csv)", "All files (*)"]
-        // ✅ Убрали shortcuts (баг Qt 6.11)
+    // === DIALOG ЭКСПОРТА ===
+           FileDialog {
+               id: exportDialog
+               title: "Куда сохранить бэкап?"
+               nameFilters: ["*.csv"]
+               fileMode: FileDialog.SaveFile
+               selectedFile: "HealthMate_Backup.csv" // Android сам подставит папку по умолчанию
 
-        onAccepted: {
-            var path = selectedFile.toString()
-            if (path.startsWith("file:///")) path = path.slice(8)
-            else if (path.startsWith("file://")) path = path.slice(7)
+               onAccepted: {
+                   var result = DataService.exportToCSV(selectedFile.toString())
+                   statusLabel.text = result
+                   statusLabel.color = result.startsWith("Успех") ? window.successColor : "#ff6b6b"
+                   statusLabel.visible = true
+                   timer.start()
+               }
+           }
 
-            var result = ""
-            if (fileMode === FileDialog.SaveFile) {
-                result = DataService.exportToCSV()
-            } else {
-                result = DataService.importFromCSV(path)
-            }
+           // === DIALOG ИМПОРТА ===
+           FileDialog {
+               id: importDialog
+               title: "Выберите файл для восстановления"
+               nameFilters: ["*"]
+               fileMode: FileDialog.OpenFile
 
-            statusLabel.text = result
-            statusLabel.visible = true
-            timer.start()
-        }
-    }
+               onAccepted: {
+                   var result = DataService.importFromCSV(selectedFile.toString())
+                   statusLabel.text = result
+                   statusLabel.color = result.startsWith("Успех") ? window.successColor : "#ff6b6b"
+                   statusLabel.visible = true
+                   timer.start()
+               }
+           }
 
     Label {
         id: statusLabel
