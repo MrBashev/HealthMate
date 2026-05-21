@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+//import QtQuick.Dialogs
 
 Page {
     signal backClicked()
@@ -90,34 +91,147 @@ Page {
             onClicked: backClicked()
         }
 
-        Label {
-            text: "Выберите дату:"
-            color: window.textColor
-            font.bold: true
+        // === КНОПКА ПЕРЕХОДА НА ЛЮБУЮ ДАТУ ===
+        Button {
+            text: "📅 Перейти к другой дате..."
+            Layout.fillWidth: true
+            Layout.preferredHeight: 44
+            background: Rectangle {
+                color: window.cardColor
+                radius: 10
+                border.color: window.borderColor
+                border.width: 1
+            }
+            contentItem: Text {
+                text: parent.text
+                color: window.accentColor
+                horizontalAlignment: Text.AlignHCenter
+                font.bold: true
+            }
+            onClicked: dateJumpDialog.open()
         }
 
-        // === ВЫБОР ДНЯ ===
-        RowLayout {
-            spacing: 4
-            Repeater {
-                model: getWeekDates()
-                delegate: Button {
-                    text: modelData.name + "\n" + modelData.date.slice(5)
-                    Layout.preferredWidth: 45
-                    Layout.preferredHeight: 60
-                    background: Rectangle {
-                        color: selectedDate === modelData.date ? window.accentColor : window.cardColor
-                        radius: 8
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: selectedDate === modelData.date ? window.accentTextColor : window.textColor
-                        font.pixelSize: 11
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    onClicked: selectedDate = modelData.date
+        // === DIALOG ВЫБОРА ДАТЫ (СО СПИСКАМИ) ===
+        Dialog {
+            id: dateJumpDialog
+            title: "Выберите дату"
+            modal: true
+            anchors.centerIn: parent
+            padding: 20
+            standardButtons: Dialog.Ok | Dialog.Cancel
+            background: Rectangle {
+                color: window.bgColor
+                radius: 16
+                border.color: window.borderColor
+                border.width: 1
+            }
+            dim: true
+
+            contentItem: ColumnLayout {
+                spacing: 16
+                implicitWidth: 280
+
+                Label {
+                    text: "Дата:"
+                    font.bold: true
+                    color: window.textColor
+                    Layout.fillWidth: true
                 }
+
+                // 🗓️ ДЕНЬ (список 1-31)
+                RowLayout {
+                    spacing: 8
+                    Label { text: "День:"; color: window.textColor; Layout.preferredWidth: 60 }
+                    ComboBox {
+                        id: dayCombo
+                        Layout.fillWidth: true
+                        model: 31
+                        textRole: "modelData"
+                        delegate: ItemDelegate {
+                            width: parent.width
+                            contentItem: Text {
+                                text: modelData
+                                color: window.textColor
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            highlighted: ComboBox.highlightedIndex === index
+                            background: Rectangle { color: highlighted ? window.accentColor : "transparent" }
+                        }
+                        background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
+                        indicator: Text { text: "▼"; color: window.textColor; anchors.right: parent.right; anchors.rightMargin: 8 }
+                    }
+                }
+
+                // 🗓️ МЕСЯЦ (список с русскими названиями)
+                RowLayout {
+                    spacing: 8
+                    Label { text: "Месяц:"; color: window.textColor; Layout.preferredWidth: 60 }
+                    ComboBox {
+                        id: monthCombo
+                        Layout.fillWidth: true
+                        model: ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+                                "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
+                        currentIndex: 0
+                        delegate: ItemDelegate {
+                            width: parent.width
+                            contentItem: Text {
+                                text: modelData
+                                color: window.textColor
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            highlighted: ComboBox.highlightedIndex === index
+                            background: Rectangle { color: highlighted ? window.accentColor : "transparent" }
+                        }
+                        background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
+                        indicator: Text { text: "▼"; color: window.textColor; anchors.right: parent.right; anchors.rightMargin: 8 }
+                    }
+                }
+
+                // 🗓️ ГОД (список от 2020 до текущего)
+                RowLayout {
+                    spacing: 8
+                    Label { text: "Год:"; color: window.textColor; Layout.preferredWidth: 60 }
+                    ComboBox {
+                        id: yearCombo
+                        Layout.fillWidth: true
+                        model: {
+                            var years = []
+                            var current = new Date().getFullYear()
+                            for (var y = 2020; y <= current; y++) years.push(y)
+                            return years
+                        }
+                        delegate: ItemDelegate {
+                            width: parent.width
+                            contentItem: Text {
+                                text: modelData
+                                color: window.textColor
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            highlighted: ComboBox.highlightedIndex === index
+                            background: Rectangle { color: highlighted ? window.accentColor : "transparent" }
+                        }
+                        background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
+                        indicator: Text { text: "▼"; color: window.textColor; anchors.right: parent.right; anchors.rightMargin: 8 }
+                    }
+                }
+            }
+
+            // === Синхронизация значений при открытии ===
+            onOpened: {
+                var d = new Date(selectedDate)
+                dayCombo.currentIndex = d.getDate() - 1
+                monthCombo.currentIndex = d.getMonth()
+                yearCombo.currentIndex = yearCombo.model.indexOf(d.getFullYear())
+            }
+
+            // === Применение выбора ===
+            onAccepted: {
+                var d = new Date(
+                    yearCombo.model[yearCombo.currentIndex],
+                    monthCombo.currentIndex,  // 0-11
+                    dayCombo.currentIndex + 1 // 1-31
+                )
+                selectedDate = d.toISOString().split('T')[0]
             }
         }
 
@@ -330,8 +444,8 @@ Page {
         Item { Layout.fillHeight: true }
     }
 
-    Loader {
-        id: detailLoader
-        anchors.fill: parent
-    }
+    //Loader {
+    //    id: detailLoader
+    //    anchors.fill: parent
+    //}
 }

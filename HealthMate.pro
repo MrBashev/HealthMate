@@ -7,10 +7,21 @@ SOURCES += \
         HealthCore.cpp \
         main.cpp
 
-resources.files = main.qml 
+resources.files = MainPage.qml
 resources.prefix = /$${TARGET}
-RESOURCES += resources \
-    qml.qrc
+RESOURCES += qml.qrc
+
+android {
+    PACKAGE_NAME = org.qtproject.example.HealthMate
+    VERSION_NAME = 0.7.7
+    VERSION_CODE = 7
+
+    # Пути к ключу (адаптируй под себя)
+    ANDROID_KEYSTORE_PATH = $$PWD/C:\Users\bashe\source\HealthMate/healthmate.keystore
+    ANDROID_KEYSTORE_ALIAS = healthmate
+    ANDROID_KEYSTORE_PASS = MrBashev
+    ANDROID_KEY_PASS = MrBashev
+}
 
 TRANSLATIONS += \
     HealthMate_ru_RU.ts
@@ -48,6 +59,7 @@ DISTFILES += \
     DiaryDetailPage.qml \
     DiaryOverviewPage.qml \
     FoodPage.qml \
+    MainPage.qml \
     SettingsPage.qml \
     StatsPage.qml \
     StyledButton.qml

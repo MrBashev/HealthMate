@@ -1,7 +1,6 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
+<RCC>
     <qresource prefix="/">
-        <file>main.qml</file>
+        <file>MainPage.qml</file>
         <file>CalculatorPage.qml</file>
         <file>DiaryOverviewPage.qml</file>
         <file>StatsPage.qml</file>

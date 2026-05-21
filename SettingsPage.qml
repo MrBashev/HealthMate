@@ -93,6 +93,11 @@ Page {
                         color: window.textColor
                         placeholderTextColor: window.textSecondaryColor
                         background: Rectangle { color: window.bgColor; radius: 4 }
+                        // ✅ Вызывает цифровую клавиатуру на телефоне
+                            inputMethodHints: Qt.ImhDigitsOnly
+
+                            // ✅ Разрешает только числа от 0 до 10000
+                            validator: IntValidator { bottom: 0; top: 10000 }
                     }
                 }
 
@@ -108,6 +113,11 @@ Page {
                         color: window.textColor
                         placeholderTextColor: window.textSecondaryColor
                         background: Rectangle { color: window.bgColor; radius: 4 }
+                        // ✅ Вызывает цифровую клавиатуру на телефоне
+                            inputMethodHints: Qt.ImhDigitsOnly
+
+                            // ✅ Разрешает только числа от 0 до 10000
+                            validator: IntValidator { bottom: 0; top: 10000 }
                     }
                 }
 
@@ -123,6 +133,11 @@ Page {
                         color: window.textColor
                         placeholderTextColor: window.textSecondaryColor
                         background: Rectangle { color: window.bgColor; radius: 4 }
+                        // ✅ Вызывает цифровую клавиатуру на телефоне
+                            inputMethodHints: Qt.ImhDigitsOnly
+
+                            // ✅ Разрешает только числа от 0 до 10000
+                            validator: IntValidator { bottom: 0; top: 10000 }
                     }
                 }
 
@@ -138,6 +153,11 @@ Page {
                         color: window.textColor
                         placeholderTextColor: window.textSecondaryColor
                         background: Rectangle { color: window.bgColor; radius: 4 }
+                        // ✅ Вызывает цифровую клавиатуру на телефоне
+                            inputMethodHints: Qt.ImhDigitsOnly
+
+                            // ✅ Разрешает только числа от 0 до 10000
+                            validator: IntValidator { bottom: 0; top: 10000 }
                     }
                 }
             }

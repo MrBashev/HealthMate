@@ -17,6 +17,7 @@ public:
 
     Q_INVOKABLE void cleanTrash();
     Q_INVOKABLE QString getBackupDir();
+    Q_INVOKABLE QString getFirstLogDate();
     Q_INVOKABLE QString exportToCSV(const QString &targetPath);
     Q_INVOKABLE QString importFromCSV(const QString &filePath);
     Q_INVOKABLE QVariantList getWeekCalories(QString endDate);

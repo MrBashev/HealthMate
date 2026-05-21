@@ -731,3 +731,12 @@ void DataService::cleanTrash() {
     }
     qDebug() << "[CLEANUP] ✅ Готово. Осталось уникальных:" << kept.size();
 }
+
+QString DataService::getFirstLogDate() {
+    QSqlQuery q("SELECT MIN(log_date) FROM daily_log");
+    if (q.exec() && q.next() && !q.value(0).isNull()) {
+        return q.value(0).toString();
+    }
+    // Если записей нет, возвращаем 1 января 2020 как безопасный минимум
+    return "2020-01-01";
+}
