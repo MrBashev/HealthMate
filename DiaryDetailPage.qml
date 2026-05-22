@@ -93,6 +93,14 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
+            // === ВЫБОР ТИПА ПРИЁМА ===
+            ComboBox {
+                id: mealTypeCombo
+                Layout.fillWidth: true
+                model: ["🌅 Завтрак", "☀️ Обед", "🌙 Ужин", "🥨 Перекус"]
+                currentIndex: 1  // Обед по умолчанию
+                background: Rectangle { color: window.cardColor; radius: 4; border.color: window.borderColor }
+            }
             TextField {
                 id: gramsField
                 placeholderText: "Граммы"
@@ -114,7 +122,9 @@ Item {
                 onClicked: {
                     var grams = parseFloat(gramsField.text)
                     if (grams > 0) {
-                        DataService.addLogEntry(selectedFoodId, grams, "Обед", targetDate)
+                        // Маппинг индекса → техническое значение для БД
+                        var mealValue = ["breakfast", "lunch", "dinner", "snack"][mealTypeCombo.currentIndex]
+                        DataService.addLogEntry(selectedFoodId, grams, mealValue, targetDate)
                         gramsField.text = ""
                         refreshList()
                     }
@@ -127,29 +137,94 @@ Item {
             color: selectedFoodName ? window.accentColor : window.textSecondaryColor
         }
 
-        // === СПИСОК ЗАПИСЕЙ ===
-        Label { text: "Список:"; color: window.textColor; font.bold: true }
+        // === СПИСОК ЗАПИСЕЙ С ГРУППИРОВКОЙ ===
         ListView {
             id: logList
             Layout.fillWidth: true
             Layout.fillHeight: true
             model: DataService.getDayLogs(targetDate)
+            clip: true
+            spacing: 4
+
+            // 🍳 Группировка по типу приёма
+            section.property: "meal"
+            section.criteria: ViewSection.FullString
+            section.delegate: Rectangle {
+                width: parent.width
+                height: 32
+                color: "transparent"
+                Label {
+                    text: {
+                        switch(section) {
+                            case "breakfast": return "🌅 Завтрак"
+                            case "lunch":     return "☀️ Обед"
+                            case "dinner":    return "🌙 Ужин"
+                            case "snack":     return "🥨 Перекус"
+                            default:          return "📋 " + section
+                        }
+                    }
+                    font.bold: true
+                    color: window.accentColor
+                    anchors.left: parent.left
+                    anchors.leftMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Rectangle {
+                    height: 1
+                    width: parent.width
+                    color: window.borderColor
+                    anchors.bottom: parent.bottom
+                }
+            }
+
+            // 📝 Элемент списка
             delegate: ItemDelegate {
                 width: parent.width
                 background: Rectangle { color: pressed ? window.cardColor : "transparent" }
                 contentItem: RowLayout {
-                    Text { text: modelData.name + " (" + modelData.grams + "г)"; color: window.textColor; Layout.fillWidth: true }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                            text: modelData.name + " (" + modelData.grams + "г)"
+                            color: window.textColor
+                            font.bold: true
+                        }
+                        Text {
+                            text: "К:" + Math.round(modelData.calories || 0) +
+                                  " Б:" + Math.round(modelData.protein || 0) +
+                                  " Ж:" + Math.round(modelData.fat || 0) +
+                                  " У:" + Math.round(modelData.carbs || 0)
+                            color: window.textSecondaryColor
+                            font.pixelSize: 11
+                        }
+                    }
                     Button {
                         text: "❌"
                         background: Rectangle { color: window.errorColor; radius: 4 }
                         contentItem: Text { text: parent.text; color: "white" }
                         onClicked: {
-                            DataService.deleteLogEntry(modelData.id)
+                            // Безопасный доступ к ID (на случай logId или id)
+                            var idToDelete = modelData.logId !== undefined ? modelData.logId : modelData.id
+                            DataService.deleteLogEntry(idToDelete)
                             refreshList()
                         }
                     }
                 }
             }
+        }
+
+        // 📭 Заглушка для пустого дня
+        Label {
+            visible: logList.count === 0
+            text: "📭 В этот день записей нет\nДобавьте первый приём пищи"
+            color: window.textSecondaryColor
+            font.pixelSize: 13
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            Layout.fillWidth: true
+            Layout.preferredHeight: 60
+            wrapMode: Text.WordWrap
         }
 
         Button {

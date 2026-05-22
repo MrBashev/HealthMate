@@ -4,6 +4,7 @@ import QtQuick.Layouts 1.15
 //import QtQuick.Dialogs
 
 Page {
+
     signal backClicked()
     property string selectedDate: new Date().toISOString().split('T')[0]
 
@@ -44,24 +45,6 @@ Page {
         updateWater()
     }
 
-    function getWeekDates() {
-        var dates = []
-        var today = new Date()
-        var dayOfWeek = today.getDay() || 7
-        var monday = new Date(today)
-        monday.setDate(today.getDate() - dayOfWeek + 1)
-
-        for (var i = 0; i < 7; i++) {
-            var d = new Date(monday)
-            d.setDate(monday.getDate() + i)
-            var dateStr = d.getFullYear() + '-' +
-                         String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                         String(d.getDate()).padStart(2, '0')
-            var dayName = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"][i]
-            dates.push({date: dateStr, name: dayName})
-        }
-        return dates
-    }
     // ✅ Загружаем цели при смене даты
         onSelectedDateChanged: {
             // 1. Загружаем цели
@@ -78,6 +61,35 @@ Page {
 
             // 3. Обновляем воду
             updateWater()
+        }
+
+
+        // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+
+        // 🗓️ Сколько дней в месяце (с учётом високосного года)
+        function getDaysInMonth(year, monthIndex) {
+            // monthIndex: 0=Январь, 11=Декабрь
+            return new Date(year, monthIndex + 1, 0).getDate()
+        }
+
+        // 🗓️ Проверка високосного года
+        function isLeapYear(year) {
+            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0)
+        }
+
+        // 🗓️ Форматирование даты для отображения
+        function formatDate(dateStr) {
+            var d = new Date(dateStr)
+            var days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб']
+            var months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']
+            return days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear()
+        }
+
+        // 🗓️ Навигация по дням
+        function changeDate(offset) {
+            var d = new Date(selectedDate)
+            d.setDate(d.getDate() + offset)
+            selectedDate = d.toISOString().split('T')[0]
         }
 
     ColumnLayout {
@@ -138,14 +150,24 @@ Page {
                     Layout.fillWidth: true
                 }
 
-                // 🗓️ ДЕНЬ (список 1-31)
+                // 🗓️ ДЕНЬ (динамический список 1-28/29/30/31)
                 RowLayout {
                     spacing: 8
                     Label { text: "День:"; color: window.textColor; Layout.preferredWidth: 60 }
                     ComboBox {
                         id: dayCombo
                         Layout.fillWidth: true
-                        model: 31
+
+                        // ✅ Динамическая модель: пересоздаётся при смене месяца/года
+                        model: {
+                            var days = []
+                            var year = yearCombo.model[yearCombo.currentIndex] || new Date().getFullYear()
+                            var monthIdx = monthCombo.currentIndex
+                            var maxDays = getDaysInMonth(year, monthIdx)
+                            for (var i = 1; i <= maxDays; i++) days.push(i)
+                            return days
+                        }
+
                         textRole: "modelData"
                         delegate: ItemDelegate {
                             width: parent.width
@@ -159,6 +181,13 @@ Page {
                         }
                         background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
                         indicator: Text { text: "▼"; color: window.textColor; anchors.right: parent.right; anchors.rightMargin: 8 }
+
+                        // ✅ Если выбранного дня нет в новом месяце (напр. 31 февраля) — сбрасываем на 1
+                        onModelChanged: {
+                            if (currentIndex >= model.length) {
+                                currentIndex = 0
+                            }
+                        }
                     }
                 }
 
@@ -184,6 +213,19 @@ Page {
                         }
                         background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
                         indicator: Text { text: "▼"; color: window.textColor; anchors.right: parent.right; anchors.rightMargin: 8 }
+
+                        // ✅ При смене месяца — обновляем список дней
+                                            onCurrentIndexChanged: {
+                                                // Сохраняем текущий день, если он валиден для нового месяца
+                                                var oldDay = dayCombo.currentIndex + 1
+                                                var maxDays = getDaysInMonth(
+                                                    yearCombo.model[yearCombo.currentIndex],
+                                                    monthCombo.currentIndex
+                                                )
+                                                if (oldDay > maxDays) {
+                                                    dayCombo.currentIndex = maxDays - 1 // Сброс на последний день месяца
+                                                }
+                                            }
                     }
                 }
 
@@ -211,6 +253,17 @@ Page {
                             background: Rectangle { color: highlighted ? window.accentColor : "transparent" }
                         }
                         background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
+                        // ✅ При смене года — проверяем февраль (високосный/нет)
+                                            onCurrentIndexChanged: {
+                                                var oldDay = dayCombo.currentIndex + 1
+                                                var maxDays = getDaysInMonth(
+                                                    yearCombo.model[yearCombo.currentIndex],
+                                                    monthCombo.currentIndex
+                                                )
+                                                if (oldDay > maxDays) {
+                                                    dayCombo.currentIndex = maxDays - 1
+                                                }
+                                            }
                         indicator: Text { text: "▼"; color: window.textColor; anchors.right: parent.right; anchors.rightMargin: 8 }
                     }
                 }
@@ -305,6 +358,10 @@ Page {
                 }
             }
         }
+
+
+
+
         // === ВОДНЫЙ БАЛАНС ===
         Rectangle {
             Layout.fillWidth: true
@@ -444,8 +501,10 @@ Page {
         Item { Layout.fillHeight: true }
     }
 
-    //Loader {
-    //    id: detailLoader
-    //    anchors.fill: parent
-    //}
+    Loader {
+        id: detailLoader
+        anchors.fill: parent
+        visible: item !== null
+        z: 10 // Чтобы он был поверх списка
+    }
 }
