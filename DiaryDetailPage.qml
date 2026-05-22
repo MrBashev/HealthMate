@@ -71,17 +71,42 @@ Item {
             onTextChanged: foodList.model = DataService.searchFoods(searchField.text)
         }
 
-        // Список продуктов
         ListView {
             id: foodList
             Layout.fillWidth: true
-            Layout.preferredHeight: 120
+            Layout.preferredHeight: 160
             model: DataService.getAllFoods()
             clip: true
+            spacing: 4
+
             delegate: ItemDelegate {
                 width: parent.width
-                background: Rectangle { color: pressed ? window.cardColor : "transparent" }
-                contentItem: Text { text: modelData.name; color: window.textColor }
+                height: 56
+                highlighted: selectedFoodId === modelData.id
+                background: Rectangle {
+                    color: highlighted ? window.accentColor : (pressed ? window.cardColor : "transparent")
+                    radius: 8
+                }
+                contentItem: RowLayout {
+                    spacing: 8
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                            text: modelData.name
+                            color: highlighted ? window.accentTextColor : window.textColor
+                            font.bold: true
+                        }
+                        Text {
+                            text: "🔥" + modelData.calories + " ккал | " +
+                                  "Б:" + Math.round(modelData.protein || 0) + " " +
+                                  "Ж:" + Math.round(modelData.fat || 0) + " " +
+                                  "У:" + Math.round(modelData.carbs || 0)
+                            color: highlighted ? window.accentTextColor : window.textSecondaryColor
+                            font.pixelSize: 11
+                        }
+                    }
+                }
                 onClicked: {
                     selectedFoodId = modelData.id
                     selectedFoodName = modelData.name
@@ -150,25 +175,34 @@ Item {
             section.property: "meal"
             section.criteria: ViewSection.FullString
             section.delegate: Rectangle {
-                width: parent.width
-                height: 32
-                color: "transparent"
-                Label {
-                    text: {
-                        switch(section) {
-                            case "breakfast": return "🌅 Завтрак"
-                            case "lunch":     return "☀️ Обед"
-                            case "dinner":    return "🌙 Ужин"
-                            case "snack":     return "🥨 Перекус"
-                            default:          return "📋 " + section
-                        }
-                    }
-                    font.bold: true
-                    color: window.accentColor
-                    anchors.left: parent.left
+                width: parent ? parent.width : 300
+                height: 36
+                color: window.bgColor
+
+                RowLayout {
+                    anchors.fill: parent
                     anchors.leftMargin: 8
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.rightMargin: 8
+                    spacing: 8
+
+                    Label {
+                        text: {
+                            switch(section) {
+                                case "breakfast": return "🌅 Завтрак"
+                                case "lunch":     return "☀️ Обед"
+                                case "dinner":    return "🌙 Ужин"
+                                case "snack":     return "🥨 Перекус"
+                                default:          return "📋 " + section
+                            }
+                        }
+                        font.bold: true
+                        font.pixelSize: 13
+                        color: window.accentColor
+                        Layout.fillWidth: true
+                        elide: Text.ElideRight
+                    }
                 }
+
                 Rectangle {
                     height: 1
                     width: parent.width

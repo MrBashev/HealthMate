@@ -167,44 +167,85 @@ QVariantList DataService::getWeekCalories(QString endDate) {
 
 QVariantList DataService::getAllFoods() {
     QVariantList result;
-    QSqlQuery query("SELECT id, name, calories_per_100g FROM food_items");
-
+    // ✅ Запрашиваем ВСЕ нутриенты, а не только калории
+    QSqlQuery query("SELECT id, name, calories_per_100g, protein, fat, carbs FROM food_items ORDER BY name ASC");
     qDebug() << "[DB] Запрос продуктов, найдено:";
-
     while (query.next()) {
         QVariantMap item;
         item["id"] = query.value(0);
         item["name"] = query.value(1);
-        item["calories"] = query.value(2);
+        item["calories"] = query.value(2).toInt();
+        item["protein"] = query.value(3).toDouble();
+        item["fat"] = query.value(4).toDouble();
+        item["carbs"] = query.value(5).toDouble();
         result.append(item);
-        qDebug() << "  -" << query.value(1).toString() << ":" << query.value(2).toInt() << "ккал";
+        qDebug() << "  -" << query.value(1).toString()
+                 << ":" << query.value(2).toInt() << "ккал"
+                 << "| Б:" << query.value(3).toDouble()
+                 << "Ж:" << query.value(4).toDouble()
+                 << "У:" << query.value(5).toDouble();
     }
-
     return result;
 }
 
 bool DataService::addLogEntry(int foodId, double grams, QString meal, QString date) {
     qDebug() << "[DB] Добавление записи: foodId=" << foodId
              << ", grams=" << grams
-             << ", date=" << date;  // ← Используем переданную дату
+             << ", meal=" << meal
+             << ", date=" << date;
 
-    QSqlQuery query;
-    query.prepare("INSERT INTO daily_log (food_id, grams, meal, log_date) VALUES (?, ?, ?, ?)");
-    query.addBindValue(foodId);
-    query.addBindValue(grams);
-    query.addBindValue(meal);
-    query.addBindValue(date);  // ← Сохраняем переданную дату
+    QSqlDatabase db = QSqlDatabase::database();
 
-    bool success = query.exec();
+    // 1️⃣ Проверяем: есть ли уже такая запись за этот день?
+    QSqlQuery check(db);
+    check.prepare("SELECT id, grams FROM daily_log WHERE log_date = ? AND food_id = ? AND meal = ?");
+    check.addBindValue(date);
+    check.addBindValue(foodId);
+    check.addBindValue(meal);
 
-    if (!success) {
-        qDebug() << "[DB] Ошибка вставки:" << query.lastError().text();
+    if (check.exec() && check.next()) {
+        // ✅ Запись есть → СУММИРУЕМ граммы
+        double existingGrams = check.value(1).toDouble();
+        double newGrams = existingGrams + grams;
+        int logId = check.value(0).toInt();
+
+        QSqlQuery upd(db);
+        upd.prepare("UPDATE daily_log SET grams = ? WHERE id = ?");
+        upd.addBindValue(newGrams);
+        upd.addBindValue(logId);
+
+        bool success = upd.exec();
+
+        if (success) {
+            qDebug() << "[DB] 🔄 Обновлено:" << foodId
+                     << existingGrams << "г + " << grams << "г = " << newGrams << "г";
+            emit dataChanged();
+        } else {
+            qDebug() << "[DB] Ошибка обновления:" << upd.lastError().text();
+        }
+
+        return success;
+
     } else {
-        qDebug() << "[DB] Запись добавлена успешно! ID:" << query.lastInsertId().toInt();
-        emit dataChanged();
-    }
+        // ❌ Записи нет → СОЗДАЁМ новую
+        QSqlQuery query(db);
+        query.prepare("INSERT INTO daily_log (food_id, grams, meal, log_date) VALUES (?, ?, ?, ?)");
+        query.addBindValue(foodId);
+        query.addBindValue(grams);
+        query.addBindValue(meal);
+        query.addBindValue(date);
 
-    return success;
+        bool success = query.exec();
+
+        if (success) {
+            qDebug() << "[DB] ➕ Добавлено:" << foodId << grams << "г на" << date;
+            emit dataChanged();
+        } else {
+            qDebug() << "[DB] Ошибка вставки:" << query.lastError().text();
+        }
+
+        return success;
+    }
 }
 
 QVariantList DataService::searchFoods(QString query) {
@@ -254,12 +295,24 @@ bool DataService::clearDayLogs(QString date) {
 }
 QVariantList DataService::getDayLogs(QString date) {
     qDebug() << "[DB] Запрос записей за дату:" << date;
-
     QVariantList result;
     QSqlQuery query;
-    query.prepare("SELECT d.id, f.name, d.grams, d.meal FROM daily_log d "
+
+    // ✅ Добавляем нутриенты в SELECT
+    query.prepare("SELECT d.id, f.name, d.grams, d.meal, "
+                  "f.calories_per_100g, f.protein, f.fat, f.carbs "
+                  "FROM daily_log d "
                   "JOIN food_items f ON d.food_id = f.id "
-                  "WHERE d.log_date = ?");
+                  "WHERE d.log_date = ? "
+                  "ORDER BY "
+                  "  CASE d.meal "
+                  "    WHEN 'breakfast' THEN 1 "
+                  "    WHEN 'lunch' THEN 2 "
+                  "    WHEN 'dinner' THEN 3 "
+                  "    WHEN 'snack' THEN 4 "
+                  "    ELSE 5 "
+                  "  END, "
+                  "  d.id");
     query.addBindValue(date);
 
     if (!query.exec()) {
@@ -269,12 +322,28 @@ QVariantList DataService::getDayLogs(QString date) {
 
     while (query.next()) {
         QVariantMap entry;
+        double grams = query.value(2).toDouble();
+        double calPer100 = query.value(4).toDouble();
+
         entry["id"] = query.value(0);
         entry["name"] = query.value(1);
-        entry["grams"] = query.value(2);
+        entry["grams"] = grams;
         entry["meal"] = query.value(3);
+
+        // ✅ Рассчитываем КБЖУ для конкретных граммов
+        entry["calories"] = calPer100 * grams / 100.0;
+        entry["protein"] = query.value(5).toDouble() * grams / 100.0;
+        entry["fat"] = query.value(6).toDouble() * grams / 100.0;
+        entry["carbs"] = query.value(7).toDouble() * grams / 100.0;
+
         result.append(entry);
-        qDebug() << "  -" << query.value(1).toString() << ":" << query.value(2).toDouble() << "г";
+
+        qDebug() << "  -" << query.value(1).toString()
+                 << ":" << grams << "г"
+                 << "| К:" << entry["calories"].toDouble()
+                 << "Б:" << entry["protein"].toDouble()
+                 << "Ж:" << entry["fat"].toDouble()
+                 << "У:" << entry["carbs"].toDouble();
     }
 
     qDebug() << "[DB] Найдено записей:" << result.size();

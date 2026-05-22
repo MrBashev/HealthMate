@@ -89,9 +89,15 @@ Page {
         function changeDate(offset) {
             var d = new Date(selectedDate)
             d.setDate(d.getDate() + offset)
-            selectedDate = d.toISOString().split('T')[0]
+            // ✅ Ручное форматирование без UTC-сдвига
+            selectedDate = d.getFullYear() + '-' +
+                           String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                           String(d.getDate()).padStart(2, '0')
         }
 
+
+    Item{
+        anchors.fill: parent
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16
@@ -103,25 +109,38 @@ Page {
             onClicked: backClicked()
         }
 
-        // === КНОПКА ПЕРЕХОДА НА ЛЮБУЮ ДАТУ ===
-        Button {
-            text: "📅 Перейти к другой дате..."
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-            background: Rectangle {
-                color: window.cardColor
-                radius: 10
-                border.color: window.borderColor
-                border.width: 1
-            }
-            contentItem: Text {
-                text: parent.text
-                color: window.accentColor
-                horizontalAlignment: Text.AlignHCenter
-                font.bold: true
-            }
-            onClicked: dateJumpDialog.open()
-        }
+        // === НАВИГАЦИЯ: ← Дата → ===
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Button {
+                        text: "←"
+                        Layout.preferredWidth: 48
+                        Layout.preferredHeight: 48
+                        background: Rectangle { color: window.cardColor; radius: 10; border.color: window.borderColor }
+                        contentItem: Text { text: parent.text; color: window.textColor; horizontalAlignment: Text.AlignHCenter; font.bold: true; font.pixelSize: 18 }
+                        onClicked: changeDate(-1)
+                    }
+
+                    Button {
+                        text: formatDate(selectedDate)
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 48
+                        background: Rectangle { color: window.cardColor; radius: 10; border.color: window.borderColor }
+                        contentItem: Text { text: parent.text; color: window.accentColor; horizontalAlignment: Text.AlignHCenter; font.bold: true }
+                        onClicked: dateJumpDialog.open()
+                    }
+
+                    Button {
+                        text: "→"
+                        Layout.preferredWidth: 48
+                        Layout.preferredHeight: 48
+                        background: Rectangle { color: window.cardColor; radius: 10; border.color: window.borderColor }
+                        contentItem: Text { text: parent.text; color: window.textColor; horizontalAlignment: Text.AlignHCenter; font.bold: true; font.pixelSize: 18 }
+                        onClicked: changeDate(1)
+                    }
+                }
 
         // === DIALOG ВЫБОРА ДАТЫ (СО СПИСКАМИ) ===
         Dialog {
@@ -169,16 +188,45 @@ Page {
                         }
 
                         textRole: "modelData"
-                        delegate: ItemDelegate {
-                            width: parent.width
+                        // ✅ ЯВНЫЙ ФОН ДЛЯ POPUP (выпадающего списка)
+                            popup.background: Rectangle {
+                                color: window.cardColor
+                                border.color: window.borderColor
+                                border.width: 1
+                                radius: 8
+                            }
+
+                            // ✅ Цвет текста в закрытом состоянии
                             contentItem: Text {
-                                text: modelData
+                                text: dayCombo.displayText  // или monthCombo.displayText / yearCombo.displayText
                                 color: window.textColor
                                 verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignLeft
+                                leftPadding: 12
+                                font.pixelSize: 14
                             }
-                            highlighted: ComboBox.highlightedIndex === index
-                            background: Rectangle { color: highlighted ? window.accentColor : "transparent" }
-                        }
+
+                            // ✅ Делегат (как выше)
+                            delegate: ItemDelegate {
+                                width: parent.width
+                                height: 40
+
+                                contentItem: Text {
+                                    text: modelData
+                                    color: highlighted ? window.accentTextColor : window.textColor
+                                    verticalAlignment: Text.AlignVCenter
+                                    horizontalAlignment: Text.AlignLeft
+                                    leftPadding: 12
+                                    font.pixelSize: 14
+                                }
+
+                                highlighted: ComboBox.highlightedIndex === index
+
+                                background: Rectangle {
+                                    color: highlighted ? window.accentColor : (pressed ? window.cardColor : "transparent")
+                                    radius: 6
+                                }
+                            }
                         background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
                         indicator: Text { text: "▼"; color: window.textColor; anchors.right: parent.right; anchors.rightMargin: 8 }
 
@@ -201,16 +249,45 @@ Page {
                         model: ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
                                 "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
                         currentIndex: 0
-                        delegate: ItemDelegate {
-                            width: parent.width
+                        // ✅ ЯВНЫЙ ФОН ДЛЯ POPUP (выпадающего списка)
+                            popup.background: Rectangle {
+                                color: window.cardColor
+                                border.color: window.borderColor
+                                border.width: 1
+                                radius: 8
+                            }
+
+                            // ✅ Цвет текста в закрытом состоянии
                             contentItem: Text {
-                                text: modelData
+                                text: monthCombo.displayText  // или monthCombo.displayText / yearCombo.displayText
                                 color: window.textColor
                                 verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignLeft
+                                leftPadding: 12
+                                font.pixelSize: 14
                             }
-                            highlighted: ComboBox.highlightedIndex === index
-                            background: Rectangle { color: highlighted ? window.accentColor : "transparent" }
-                        }
+
+                            // ✅ Делегат (как выше)
+                            delegate: ItemDelegate {
+                                width: parent.width
+                                height: 40
+
+                                contentItem: Text {
+                                    text: modelData
+                                    color: highlighted ? window.accentTextColor : window.textColor
+                                    verticalAlignment: Text.AlignVCenter
+                                    horizontalAlignment: Text.AlignLeft
+                                    leftPadding: 12
+                                    font.pixelSize: 14
+                                }
+
+                                highlighted: ComboBox.highlightedIndex === index
+
+                                background: Rectangle {
+                                    color: highlighted ? window.accentColor : (pressed ? window.cardColor : "transparent")
+                                    radius: 6
+                                }
+                            }
                         background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
                         indicator: Text { text: "▼"; color: window.textColor; anchors.right: parent.right; anchors.rightMargin: 8 }
 
@@ -242,16 +319,45 @@ Page {
                             for (var y = 2020; y <= current; y++) years.push(y)
                             return years
                         }
-                        delegate: ItemDelegate {
-                            width: parent.width
+                        // ✅ ЯВНЫЙ ФОН ДЛЯ POPUP (выпадающего списка)
+                            popup.background: Rectangle {
+                                color: window.cardColor
+                                border.color: window.borderColor
+                                border.width: 1
+                                radius: 8
+                            }
+
+                            // ✅ Цвет текста в закрытом состоянии
                             contentItem: Text {
-                                text: modelData
+                                text: yearCombo.displayText  // или monthCombo.displayText / yearCombo.displayText
                                 color: window.textColor
                                 verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignLeft
+                                leftPadding: 12
+                                font.pixelSize: 14
                             }
-                            highlighted: ComboBox.highlightedIndex === index
-                            background: Rectangle { color: highlighted ? window.accentColor : "transparent" }
-                        }
+
+                            // ✅ Делегат (как выше)
+                            delegate: ItemDelegate {
+                                width: parent.width
+                                height: 40
+
+                                contentItem: Text {
+                                    text: modelData
+                                    color: highlighted ? window.accentTextColor : window.textColor
+                                    verticalAlignment: Text.AlignVCenter
+                                    horizontalAlignment: Text.AlignLeft
+                                    leftPadding: 12
+                                    font.pixelSize: 14
+                                }
+
+                                highlighted: ComboBox.highlightedIndex === index
+
+                                background: Rectangle {
+                                    color: highlighted ? window.accentColor : (pressed ? window.cardColor : "transparent")
+                                    radius: 6
+                                }
+                            }
                         background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
                         // ✅ При смене года — проверяем февраль (високосный/нет)
                                             onCurrentIndexChanged: {
@@ -279,12 +385,13 @@ Page {
 
             // === Применение выбора ===
             onAccepted: {
-                var d = new Date(
-                    yearCombo.model[yearCombo.currentIndex],
-                    monthCombo.currentIndex,  // 0-11
-                    dayCombo.currentIndex + 1 // 1-31
-                )
-                selectedDate = d.toISOString().split('T')[0]
+                var y = yearCombo.model[yearCombo.currentIndex]
+                var m = monthCombo.currentIndex + 1
+                var day = dayCombo.currentIndex + 1
+                // ✅ Ручное форматирование без UTC-сдвига
+                selectedDate = y + '-' +
+                               String(m).padStart(2, '0') + '-' +
+                               String(day).padStart(2, '0')
             }
         }
 
@@ -499,6 +606,8 @@ Page {
         }
 
         Item { Layout.fillHeight: true }
+    }
+
     }
 
     Loader {
