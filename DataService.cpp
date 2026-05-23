@@ -77,6 +77,27 @@ bool DataService::initDatabase() {
         )
     )");
 
+    // === ТАБЛИЦА ШАБЛОНОВ ===
+    query.exec(R"(
+        CREATE TABLE IF NOT EXISTS meal_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    )");
+
+    query.exec(R"(
+        CREATE TABLE IF NOT EXISTS template_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            template_id INTEGER NOT NULL,
+            food_id INTEGER NOT NULL,
+            grams REAL NOT NULL,
+            meal TEXT NOT NULL,
+            FOREIGN KEY(template_id) REFERENCES meal_templates(id) ON DELETE CASCADE,
+            FOREIGN KEY(food_id) REFERENCES food_items(id)
+        )
+    )");
+
     if (query.lastError().isValid()) {
         qDebug() << "[DB] Ошибка создания daily_log:" << query.lastError().text();
     }
@@ -862,4 +883,103 @@ void DataService::pasteCopiedLogs(QString targetDate) {
 
     qDebug() << "[PASTE] ✅ Вставка завершена";
     emit dataChanged();
+}
+
+bool DataService::saveAsTemplate(QString name) {
+    qDebug() << "[TEMPLATE] Сохранение шаблона:" << name;
+    QSqlDatabase db = QSqlDatabase::database();
+
+    // Берём записи за ТЕКУЩУЮ дату (m_currentDate)
+    QSqlQuery getLogs(db);
+    getLogs.prepare("SELECT food_id, grams, meal FROM daily_log WHERE log_date = ?");
+    getLogs.addBindValue(m_currentDate);
+
+    if (!getLogs.exec() || !getLogs.next()) {
+        qDebug() << "[TEMPLATE] ⚠️ Нет записей для сохранения";
+        return false;
+    }
+    getLogs.previous(); // Возвращаемся к началу
+
+    db.transaction();
+
+    // 1. Создаём шаблон
+    QSqlQuery insTpl(db);
+    insTpl.prepare("INSERT INTO meal_templates (name) VALUES (?)");
+    insTpl.addBindValue(name);
+    if (!insTpl.exec()) {
+        db.rollback();
+        return false;
+    }
+    int tplId = insTpl.lastInsertId().toInt();
+
+    // 2. Копируем записи в template_items
+    QSqlQuery insItem(db);
+    insItem.prepare("INSERT INTO template_items (template_id, food_id, grams, meal) VALUES (?, ?, ?, ?)");
+    int count = 0;
+    while (getLogs.next()) {
+        insItem.addBindValue(tplId);
+        insItem.addBindValue(getLogs.value(0).toInt());
+        insItem.addBindValue(getLogs.value(1).toDouble());
+        insItem.addBindValue(getLogs.value(2).toString());
+        insItem.exec();
+        count++;
+    }
+
+    db.commit();
+    qDebug() << "[TEMPLATE] ✅ Сохранено:" << count << "записей в шаблон" << name;
+    emit dataChanged();
+    return true;
+}
+
+QVariantList DataService::getTemplates() {
+    QVariantList result;
+    QSqlQuery q("SELECT id, name FROM meal_templates ORDER BY name ASC");
+    while (q.next()) {
+        QVariantMap tpl;
+        tpl["id"] = q.value(0).toInt();
+        tpl["name"] = q.value(1).toString();
+        result.append(tpl);
+    }
+    return result;
+}
+
+bool DataService::applyTemplate(int templateId, QString targetDate) {
+    // ✅ Защита от будущего
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    if (targetDate > today) {
+        qDebug() << "[TEMPLATE] ⛔ Блокировка: нельзя применять в будущее";
+        return false;
+    }
+
+    qDebug() << "[TEMPLATE] Применение шаблона" << templateId << "на" << targetDate;
+    QSqlDatabase db = QSqlDatabase::database();
+
+    QSqlQuery getItems(db);
+    getItems.prepare("SELECT food_id, grams, meal FROM template_items WHERE template_id = ?");
+    getItems.addBindValue(templateId);
+
+    if (!getItems.exec()) return false;
+
+    int count = 0;
+    while (getItems.next()) {
+        addLogEntry(
+            getItems.value(0).toInt(),
+            getItems.value(1).toDouble(),
+            getItems.value(2).toString(),
+            targetDate
+            );
+        count++;
+    }
+
+    qDebug() << "[TEMPLATE] ✅ Применено" << count << "записей";
+    return true;
+}
+
+bool DataService::deleteTemplate(int templateId) {
+    QSqlQuery q;
+    q.prepare("DELETE FROM meal_templates WHERE id = ?");
+    q.addBindValue(templateId);
+    bool ok = q.exec();
+    if (ok) emit dataChanged();
+    return ok;
 }

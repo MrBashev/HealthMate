@@ -16,6 +16,10 @@ public:
 
 
     Q_INVOKABLE void cleanTrash();
+    Q_INVOKABLE bool saveAsTemplate(QString name);
+    Q_INVOKABLE QVariantList getTemplates();
+    Q_INVOKABLE bool applyTemplate(int templateId, QString targetDate);
+    Q_INVOKABLE bool deleteTemplate(int templateId);
     Q_INVOKABLE void copyDayLogs(QString date);
     Q_INVOKABLE bool hasCopiedLogs();
     Q_INVOKABLE int copiedLogsCount();

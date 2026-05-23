@@ -298,6 +298,134 @@ Item {
             }
         }
 
+        // === ШАБЛОНЫ ===
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Button {
+                text: "💾 Сохранить как шаблон"
+                Layout.fillWidth: true
+                enabled: !isFuture && logList.count > 0
+                background: Rectangle { color: enabled ? window.accentColor : window.textSecondaryColor; radius: 8 }
+                contentItem: Text { text: parent.text; color: enabled ? window.accentTextColor : "#888"; horizontalAlignment: Text.AlignHCenter; font.bold: true }
+                onClicked: saveTemplateDialog.open()
+            }
+
+            Button {
+                text: "📂 Загрузить шаблон"
+                Layout.fillWidth: true
+                enabled: !isFuture
+                background: Rectangle { color: enabled ? window.cardColor : window.textSecondaryColor; radius: 8; border.color: window.borderColor }
+                contentItem: Text { text: parent.text; color: enabled ? window.textColor : "#888"; horizontalAlignment: Text.AlignHCenter; font.bold: true }
+                onClicked: loadTemplateDialog.open()
+            }
+        }
+
+        // === DIALOG СОХРАНЕНИЯ ШАБЛОНА ===
+        Dialog {
+            id: saveTemplateDialog
+            title: "Сохранить как шаблон"
+            modal: true
+            anchors.centerIn: parent
+            padding: 20
+            standardButtons: Dialog.Ok | Dialog.Cancel
+            background: Rectangle { color: window.bgColor; radius: 16; border.color: window.borderColor }
+
+            contentItem: ColumnLayout {
+                spacing: 12
+                implicitWidth: 280
+                Label { text: "Название шаблона:"; color: window.textColor; font.bold: true }
+                TextField {
+                    id: templateNameField
+                    placeholderText: "Например: Мой завтрак"
+                    Layout.fillWidth: true
+                    color: window.textColor
+                    background: Rectangle { color: window.cardColor; radius: 6; border.color: window.borderColor }
+                }
+            }
+
+            onAccepted: {
+                var name = templateNameField.text.trim()
+                if (name.length > 0) {
+                    if (DataService.saveAsTemplate(name)) {
+                        templateFeedback.text = "✅ Шаблон «" + name + "» сохранён!"
+                        templateFeedback.visible = true
+                        templateTimer.restart()
+                    }
+                    templateNameField.text = ""
+                }
+            }
+        }
+
+        // === DIALOG ЗАГРУЗКИ ШАБЛОНА ===
+        Dialog {
+            id: loadTemplateDialog
+            title: "Выберите шаблон"
+            modal: true
+            anchors.centerIn: parent
+            padding: 20
+            standardButtons: Dialog.Cancel
+            background: Rectangle { color: window.bgColor; radius: 16; border.color: window.borderColor }
+
+            contentItem: ColumnLayout {
+                spacing: 8
+                implicitWidth: 280
+
+                Repeater {
+                    model: DataService.getTemplates()
+                    delegate: Button {
+                        text: modelData.name
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 44
+                        background: Rectangle { color: pressed ? window.accentColor : window.cardColor; radius: 8; border.color: window.borderColor }
+                        contentItem: RowLayout {
+                            Label { text: modelData.name; color: window.textColor; Layout.fillWidth: true; leftPadding: 8 }
+                            Button {
+                                text: "🗑️"
+                                Layout.preferredWidth: 36
+                                Layout.preferredHeight: 36
+                                background: Rectangle { color: window.errorColor; radius: 6 }
+                                contentItem: Text { text: parent.text; color: "white"; horizontalAlignment: Text.AlignHCenter }
+                                onClicked: {
+                                    DataService.deleteTemplate(modelData.id)
+                                    loadTemplateDialog.contentItem.children[0].model = DataService.getTemplates()
+                                }
+                            }
+                        }
+                        onClicked: {
+                            DataService.applyTemplate(modelData.id, targetDate)
+                            refreshList()
+                            loadTemplateDialog.close()
+                            templateFeedback.text = "✅ Шаблон применён!"
+                            templateFeedback.visible = true
+                            templateTimer.restart()
+                        }
+                    }
+                }
+
+                Label {
+                    text: "Нет сохранённых шаблонов"
+                    visible: loadTemplateDialog.contentItem.children[0].count === 0
+                    color: window.textSecondaryColor
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.fillWidth: true
+                }
+            }
+        }
+
+        // Обратная связь по шаблонам
+        Label {
+            id: templateFeedback
+            text: ""
+            color: window.successColor
+            font.bold: true
+            visible: false
+            horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
+        }
+        Timer { id: templateTimer; interval: 2000; onTriggered: templateFeedback.visible = false }
+
         // Всплывающие подсказки
         Label {
             id: copyFeedback
