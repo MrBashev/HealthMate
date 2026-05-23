@@ -261,6 +261,76 @@ Item {
             wrapMode: Text.WordWrap
         }
 
+        // === КОПИРОВАНИЕ ДНЯ ===
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            // Кнопка копирования
+            Button {
+                text: "📋 Скопировать этот день"
+                Layout.fillWidth: true
+                background: Rectangle { color: window.accentColor; radius: 8 }
+                contentItem: Text { text: parent.text; color: window.accentTextColor; horizontalAlignment: Text.AlignHCenter; font.bold: true }
+                onClicked: {
+                    DataService.copyDayLogs(targetDate)
+                    copyFeedback.text = "✅ Скопировано " + DataService.copiedLogsCount() + " записей"
+                    copyFeedback.visible = true
+                    copyTimer.restart()
+                }
+            }
+
+            // Кнопка вставки (видима только если есть буфер и день пустой)
+            Button {
+                text: "📌 Вставить сюда (" + DataService.copiedLogsCount() + ")"
+                Layout.fillWidth: true
+                enabled: !isFuture
+                visible: DataService.hasCopiedLogs() && logList.count === 0
+                background: Rectangle { color: window.successColor; radius: 8 }
+                contentItem: Text { text: parent.text; color: "white"; horizontalAlignment: Text.AlignHCenter; font.bold: true }
+                onClicked: {
+                    DataService.pasteCopiedLogs(targetDate)
+                    refreshList()
+                    pasteFeedback.text = "✅ Вставлено " + DataService.copiedLogsCount() + " записей"
+                    pasteFeedback.visible = true
+                    pasteTimer.restart()
+                }
+            }
+        }
+
+        // Всплывающие подсказки
+        Label {
+            id: copyFeedback
+            text: ""
+            color: window.accentColor
+            font.bold: true
+            visible: false
+            horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
+        }
+
+        Label {
+            id: pasteFeedback
+            text: ""
+            color: window.successColor
+            font.bold: true
+            visible: false
+            horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
+        }
+
+        Timer {
+            id: copyTimer
+            interval: 2000
+            onTriggered: copyFeedback.visible = false
+        }
+
+        Timer {
+            id: pasteTimer
+            interval: 2000
+            onTriggered: pasteFeedback.visible = false
+        }
+
         Button {
             text: "🗑️ Очистить день"
             Layout.fillWidth: true

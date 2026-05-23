@@ -809,3 +809,57 @@ QString DataService::getFirstLogDate() {
     // Если записей нет, возвращаем 1 января 2020 как безопасный минимум
     return "2020-01-01";
 }
+
+void DataService::copyDayLogs(QString date) {
+    qDebug() << "[COPY] Копирование записей за" << date;
+    m_copiedLogs.clear();
+
+    QSqlQuery query;
+    query.prepare("SELECT food_id, grams, meal FROM daily_log WHERE log_date = ?");
+    query.addBindValue(date);
+
+    if (query.exec()) {
+        while (query.next()) {
+            QVariantMap entry;
+            entry["food_id"] = query.value(0).toInt();
+            entry["grams"] = query.value(1).toDouble();
+            entry["meal"] = query.value(2).toString();
+            m_copiedLogs.append(entry);
+        }
+    }
+
+    qDebug() << "[COPY] ✅ Скопировано записей:" << m_copiedLogs.size();
+    emit dataChanged();
+}
+
+bool DataService::hasCopiedLogs() {
+    return !m_copiedLogs.isEmpty();
+}
+
+int DataService::copiedLogsCount() {
+    return m_copiedLogs.size();
+}
+
+void DataService::pasteCopiedLogs(QString targetDate) {
+    // ✅ Защита: нельзя вставлять в будущее
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    if (targetDate > today) {
+        qDebug() << "[PASTE] ⛔ Блокировка: нельзя вставлять в будущее (" << targetDate << ")";
+        return;
+    }
+
+    qDebug() << "[PASTE] Вставка" << m_copiedLogs.size() << "записей в" << targetDate;
+
+    for (const QVariant &entryVar : m_copiedLogs) {
+        QVariantMap entry = entryVar.toMap();
+
+        int foodId = entry["food_id"].toInt();
+        double grams = entry["grams"].toDouble();
+        QString meal = entry["meal"].toString();
+
+        addLogEntry(foodId, grams, meal, targetDate);
+    }
+
+    qDebug() << "[PASTE] ✅ Вставка завершена";
+    emit dataChanged();
+}

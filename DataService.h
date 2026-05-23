@@ -16,6 +16,10 @@ public:
 
 
     Q_INVOKABLE void cleanTrash();
+    Q_INVOKABLE void copyDayLogs(QString date);
+    Q_INVOKABLE bool hasCopiedLogs();
+    Q_INVOKABLE int copiedLogsCount();
+    Q_INVOKABLE void pasteCopiedLogs(QString targetDate);
     Q_INVOKABLE QString getBackupDir();
     Q_INVOKABLE QString getFirstLogDate();
     Q_INVOKABLE QString exportToCSV(const QString &targetPath);
@@ -47,6 +51,7 @@ signals:
     void dateChanged();
 
 private:
+    QVariantList m_copiedLogs;  // Буфер для копирования дня
     QSqlDatabase m_db;
     QString m_currentDate;
 };
